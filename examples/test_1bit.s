@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-;Fastloader test with 2-bit protocol
+;Fastloader test with 1-bit protocol
 ;-------------------------------------------------------------------------------
 
                 processor 6502
@@ -14,7 +14,7 @@
 start:          jsr initloader
                 ldx #<filename
                 ldy #>filename
-                jsr loadfile_exomizer   ;Load file
+                jsr loadfile            ;Load file
                 bcc ok
                 sta $d020               ;If error, show errorcode in border
 exit:           jsr getin
@@ -47,7 +47,7 @@ copycolors:     lda $6400,x
                 bne copycolors
                 jmp exit
 
-filename:       dc.b "EXOMIZED P*",0
+filename:       dc.b "UNPACKED P*",0
 
-                include ..\cfg_2bit.s
+                include ..\cfg_1bit.s
                 include ..\loader.s

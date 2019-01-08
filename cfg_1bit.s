@@ -1,8 +1,8 @@
 ;-------------------------------------------------------------------------------
-; Exomizer configuration
+; 1-bit protocol configuration
 ;-------------------------------------------------------------------------------
 
-TWOBIT_PROTOCOL   = 1           ;Nonzero to use 2-bit protocol which may delay
+TWOBIT_PROTOCOL   = 0           ;Nonzero to use 2-bit protocol which may delay
                                 ;interrupts and does not allow sprites, but is
                                 ;faster. Zero to use 1-bit protocol which is
                                 ;the opposite.
@@ -16,9 +16,9 @@ ADDITIONAL_ZEROPAGE = 1         ;Set to nonzero to use additional zeropage
 LOAD_UNDER_IO   = 0             ;Set to nonzero to enable possibility to load
                                 ;under I/O areas, and to load packed data
                                 ;under the Kernal ROM.
-LOADFILE_UNPACKED = 0           ;Set to nonzero to include unpacked loading
+LOADFILE_UNPACKED = 1           ;Set to nonzero to include unpacked loading
 LOADFILE_EXOMIZER = 1           ;Set to nonzero to include EXOMIZER loading
-LOADFILE_PUCRUNCH = 0           ;Set to nonzero to include PUCRUNCH loading
+LOADFILE_PUCRUNCH = 1           ;Set to nonzero to include PUCRUNCH loading
 
 LITERAL_SEQUENCES_NOT_USED = 0  ;(EXOMIZER only): set to nonzero for shorter
                                 ;depacker, if you use -c switch to disable 

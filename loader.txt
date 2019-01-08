@@ -1,11 +1,11 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.26
+COVERT BITOPS Autoconfiguring Loader/Depacker V2.27
 ---------------------------------------------------
 
 Freely usable for all kinds of C64 projects.
 
 Credits:
 Magnus Lind (Zagon) & Gunnar Ruthenberg (Krill/Plush)
-  - EXOMIZER 2 depackroutine
+  - EXOMIZER 2 & 3 depack routines
 Pasi "Albert" Ojala
   - PUCRUNCH depackroutine
 Christoph Thelen (DocBacardi/The Dreams)
@@ -216,16 +216,16 @@ The configuration files included are only some guidelines; you should create
 your own configuration file according to what features you need.
 
 
-Exomizer & Exomizer 2
----------------------
+Exomizer 1/2/3
+--------------
 
-There are two variables in the configuration that control how the Exomizer
-depackroutine works: FORWARD_DECRUNCHING and LITERAL_SEQUENCES_NOT_USED, by
-default both are zero.
+There are four variables in the configuration that control how the Exomizer
+depackroutine works: FORWARD_DECRUNCHING, LITERAL_SEQUENCES_NOT_USED, 
+MAX_SEQUENCE_LENGTH_256 and EXOMIZER_VERSION_3. By default all are zero.
 
 In Exomizer 1, the commandline you should use is:
   exomizer -r -o<outfile> <infile>
-Eensure that FORWARD_DECRUNCHING variable is set to zero. LITERAL_SEQUENCES_
+Ensure that FORWARD_DECRUNCHING variable is set to zero. LITERAL_SEQUENCES_
 NOT_USED can be set to nonzero for a shorter depacker, as they are not used
 in files packed with Exomizer 1.
 
@@ -233,6 +233,12 @@ In Exomizer 2, use the "level" subcommand:
   exomizer level -o<outfile> <infile>
 If you use the -f switch, set FORWARD_DECRUNCHING to nonzero. If you use -c
 switch, you can set LITERAL_SEQUENCES_NOT_USED to nonzero for shorter depacker.
+
+When using Exomizer 3, you should set EXOMIZER_VERSION_3 to nonzero. This
+will use the longer but faster Exomizer 3 depack routine that is incompatible
+with Exomizer 1 & 2. f you use the -M256 switch, set MAX_SEQUENCE_LENGTH_256 
+to nonzero for a shorter depacker. You can also set LITERAL_SEQUENCES_NOT_USED
+to further shorten the depacker, if you use the -c switch.
 
 
 How the "fake"-IRQloading with IDE64 & fast drive emulation works
@@ -459,3 +465,10 @@ v2.24   - Further improvement to drive-detection.
 v2.25   - Fixed long file name directory search.
 
 v2.26   - Added * wildcard support to long file names.
+
+v2.27   - Added Exomizer 3 support.
+        - getbyte does not save/restore Y register unnecessarily. 1-bit
+          protocol buffer must be page-aligned as a consequence.
+        - Examples changed to use 2-bit protocol and smaller interleave.
+        - Most example configs have load under IO disabled for better
+          performance.

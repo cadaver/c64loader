@@ -11,11 +11,8 @@ LONG_NAMES      = 1             ;Set to nonzero to use long names (pointer in
                                 ;in X,Y)
 BORDER_FLASHING = 0             ;Set to nonzero to enable border flashing
                                 ;when fastloading :)
-ADDITIONAL_ZEROPAGE = 1         ;Set to nonzero to use additional zeropage
-                                ;variables to shorten loader code
 LOAD_UNDER_IO   = 0             ;Set to nonzero to enable possibility to load
-                                ;under I/O areas, and to load packed data
-                                ;under the Kernal ROM.
+                                ;under I/O areas.
 LOADFILE_UNPACKED = 0           ;Set to nonzero to include unpacked loading
 LOADFILE_EXOMIZER = 0           ;Set to nonzero to include EXOMIZER loading
 LOADFILE_PUCRUNCH = 1           ;Set to nonzero to include PUCRUNCH loading
@@ -45,5 +42,4 @@ zpbase          = $74           ;Zeropage base address. Loader needs 2
                                 ;addresses with unpacked, 3 with PUCRUNCH
                                 ;and 8 with EXOMIZER loading.
 
-zpbase2         = $7c           ;Additional 4 zeropage addresses for shortening
-                                ;the loader code (optional)
+zpbase2         = $7c           ;Additional 4 required zeropage addresses.

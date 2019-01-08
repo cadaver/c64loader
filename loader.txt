@@ -1,4 +1,4 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.27
+COVERT BITOPS Autoconfiguring Loader/Depacker V2.28
 ---------------------------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -132,7 +132,6 @@ before you can open the next file.
 Parameters: -
 Returns:    If Carry 0, A contains a byte from the file
             If Carry 1, file has ended. Returncode of A: $00 EOF (No error)
-                                                         $01 Read error
                                                          $02 File not found
 Modifies:   A
 
@@ -163,7 +162,7 @@ Modifies: - (Carry flag is not modified, Z- and N- flags are)
 KERNALON
 
 Saves value of $01 and sets $01 to value $36 (Basic ROM off, Kernal ROM on, I/O
-area on). Also sets the "slowirq" variable as necessary.
+area on).
 
 Parameters: -
 Returns: -
@@ -172,7 +171,7 @@ Modifies: A
 
 KERNALOFF
 
-Restores $01 value saved by KERNALON and clears the "slowirq" variable.
+Restores $01 value saved by KERNALON.
 
 Parameters: -
 Returns: -
@@ -181,7 +180,7 @@ Modifies: A
 
 INITFASTLOAD
 
-Reinitializes the drivecode if necessary. Call this when you have performed 
+Reinitializes the drivecode if necessary. Call this when you have performed
 Kernal file I/O, like saving files, and want to optimize the startup time for
 resuming fastloading operation. If you don't call this, it will be automatically
 called when opening the next file using fastloading.
@@ -245,47 +244,33 @@ How the "fake"-IRQloading with IDE64 & fast drive emulation works
 -----------------------------------------------------------------
 
 The loader switches on Kernal whenever it needs to do Kernal file I/O (re-
-initting the fastloader drivecode, saving files, or loading files without
+initting the fastloader drivecode, opening a file, or reading a byte without
 fastloader). Normally this means that the slow original serial protocol is in
-use and IRQs are being delayed unpredictably, and
-
-- The variable "slowirq" is set to value 1.
-
-This means you shouldn't be doing anything nice in your IRQs (video effects,
-music). The variable is reset back to 0 when the loader is done with Kernal I/O.
+use and IRQs are being delayed unpredictably.
 
 However, IDE64 or "fast drive emulation" in emulators don't use the serial
-protocol at all. This is detected in INITLOADER, and in that case
+protocol at all.
 
-- The variable "slowirq" will stay 0 at all times!
-
-This means that you can do whatever you like in your IRQs, however observe that
-Kernal ROM is still switched on during loading, so the IRQ vector at $0314/
-$0315 is being used (you might normally have KERNAL off and use $fffe/$ffff for
-your IRQ vector)
-
-So, as a summary, you only need to watch the value of "slowirq" variable in your
-IRQ routines, and if it turns to 1, preferably silence the SID and don't do
-anything.
+In that case the "useserial" variable will be 0, and IRQs will only be delayed
+a little if at all.
 
 
 Zeropage usage
 --------------
 
-The loader needs 2 adjacent zeropage variables with unpacked loading, 3 with
-PUCRUNCH loading and 8 with EXOMIZER loading. The base zeropage address for
-these is "zpbase" in the loader configuration file.
+The loader needs two regions of zeropage. The first region "zpbase" is for
+loading or depacking. It needs 2 adjacent zeropage variables with unpacked
+loading, 3 with PUCRUNCH loading and 8 with EXOMIZER loading. The base address
+for these is "zpbase" in the loader configuration file.
 
-Additional zeropage variables can be used to shorten the loader code. This is
-controlled by the ADDITIONAL_ZEROPAGE compile option in the configuration
-file. If the option is nonzero, 4 additional zeropage variables, with "zpbase2"
-as the base address, are used.
+Additional 4 adjacent zeropage variables are required by the lowlevel fastloader
+operations. The base address for them is "zpbase2" in the loader configuration.
 
 
 Interleave
 ----------
 
-Interleaves in the range of 13-15 are most optimal for loading speed with the
+Interleaves in the range of 12-15 are most optimal for loading speed with the
 1-bit protocol. Remember that people will likely filecopy your productions
 though, resetting interleave to 10 and causing slower loading.
 
@@ -304,10 +289,9 @@ It's not switched back to fast mode automatically as of V2.1 anymore.
 Kernal switching
 ----------------
 
-Kernal will be automatically switched on during loading with Kernal routines,
-and fastloader initialization. Afterwards the value of $01 is restored. See
-the section above about the variable "slowirq" to see whether it's "safe" to
-use IRQs during this.
+Kernal will be automatically switched on for minimal time during initializing
+the fastloader, opening a file with Kernal routines, or getting a byte with
+Kernal routines. Afterwards the value of $01 is restored.
 
 
 Sprites, interrupts and $dd00
@@ -330,7 +314,7 @@ While not loading, you can write any values, where bits 3, 4 & 5 (Serial bus
 ATN, CLK & DATA output) are zero, directly to $dd00. Those lines being high
 (zero) indicate idle state for loading.
 
-Note that the loader code contains lots of sequences like
+Note that the loader code contains several sequences like
 
   lda #$ff-$10
   and $dd00
@@ -341,7 +325,7 @@ instructions, the wrong videobank will be displayed.
 
 You have to disable sprites yourself when doing Kernal loading using the slow
 serial protocol, or when using the 2-bit fastloading protocol, or else loading
-may hang. Check the variable "slowirq" (and also "usefastload" with the 2-bit
+may hang. Check the variable "useserial" (and also "usefastload" with the 2-bit
 protocol): if either is nonzero, sprites have to be switched off.
 
 
@@ -375,14 +359,17 @@ file with OPENFILE/GETBYTE calls. To ensure that the file has been closed,
 call GETBYTE until it returns with carry set.
 
 
-Loading under I/O area and Kernal ROM
--------------------------------------
+Loading under I/O area
+----------------------
 
-Without the compile option LOAD_UNDER_IO, you can only load unpacked data
-under the Kernal ROM, and naturally an attempt to load under the I/O area
-results in a crash.
+Without the compile option LOAD_UNDER_IO, you can not load into the $d000-$dfff
+region. Enabling it has the consequence of making LOADFILE / LOADFILE_EXOMIZER
+and LOADFILE_PUCRUNCH slower, as they toggle IO for each memory read or write.
 
-With the LOAD_UNDER_IO option on, all those are allowed.
+As of V2.28, LOAD_UNDER_IO is no longer needed to load compressed data under
+the Kernal ROM, but when doing this, you need to call the load routines with
+Kernal ROM off. The GETBYTE & OPENFILE will switch Kernal on momentarily as
+required, and restore the value you have set to $01.
 
 If you are using your own routines to write data under the I/O areas, you
 can use the provided DISABLEIO and ENABLEIO routines. For example:
@@ -472,3 +459,15 @@ v2.27   - Added Exomizer 3 support.
         - Examples changed to use 2-bit protocol and smaller interleave.
         - Most example configs have load under IO disabled for better
           performance.
+
+v2.28   - Drivecode will retry read sector indefinitely; read error return code
+          removed from getbyte. This speeds up decompression a little.
+        - Rewritten 2-bit protocol send loop based on c64gameframework loader.
+        - Proper detection of Drean machines for 2-bit send adjustment.
+        - Use 2 MHz mode on 1571 for better timing reliability.
+        - Further optimization of getbyte.
+        - ADDITIONAL_ZEROPAGE option removed; it's mandatory now.
+        - LOAD_UNDER_IO no longer needed to load compressed data under the
+          Kernal ROM.
+        - The "slowirq" variable is removed, as maintaining it was extra
+          overhead. The variable "useserial" can be watched instead.

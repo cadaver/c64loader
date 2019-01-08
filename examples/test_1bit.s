@@ -6,7 +6,7 @@
                 org $0801
 
                 dc.b $0b,$08           ;Address of next BASIC instruction
-                dc.w 2002              ;Line number
+                dc.w 2019              ;Line number
                 dc.b $9e               ;SYS-token
                 dc.b $32,$30,$36,$31   ;2061 in ASCII
                 dc.b $00,$00,$00       ;BASIC program end

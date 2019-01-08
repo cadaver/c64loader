@@ -47,7 +47,7 @@ copycolors:     lda $6400,x
                 bne copycolors
                 jmp exit
 
-filename:       dc.b "UNPACKED PIC",0
+filename:       dc.b "UNPACKED P*",0
 
                 include ..\cfg_unp.s
                 include ..\loader.s

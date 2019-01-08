@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Autoconfiguring Loader/Depacker V2.25
+; COVERT BITOPS Autoconfiguring Loader/Depacker V2.26
 ; with 1541/1571/1581/CMD FD/CMD HD/IDE64/Fastdrive-emu autodetection & support
 ;
 ; EXOMIZER 2 depack by Magnus Lind & Krill
@@ -1423,10 +1423,13 @@ drv_nextfile:   lda buf,y               ;File type must be PRG
                 bne drv_notfound
                 if LONG_NAMES>0
                 ldx #$03
-                sty drv_namecmploop+1
+                sty drv_namelda+1
                 lda #$a0                ;Make an endmark at the 16th letter
                 sta buf+19,y
-drv_namecmploop:lda buf,x               ;Check against each letter of filename,
+drv_namecmploop:lda drv_filename-3,x    ;Check for wildcard first
+                cmp #$2a
+                beq drv_found
+drv_namelda:    lda buf,x               ;Check against each letter of filename,
                 cmp drv_filename-3,x    ;break on mismatch
                 bne drv_namedone
                 inx

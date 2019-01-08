@@ -47,7 +47,7 @@ copycolors:     lda $6400,x
                 bne copycolors
                 jmp exit
 
-filename:       dc.b "PUCRUNCHED PIC",0
+filename:       dc.b "PUCRUNCHED P*",0
 
                 include ..\cfg_pucr.s
                 include ..\loader.s

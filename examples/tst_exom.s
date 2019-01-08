@@ -47,7 +47,7 @@ copycolors:     lda $6400,x
                 bne copycolors
                 jmp exit
 
-filename:       dc.b "EXOMIZED PIC",0
+filename:       dc.b "EXOMIZED P*",0
 
                 include ..\cfg_exom.s
                 include ..\loader.s

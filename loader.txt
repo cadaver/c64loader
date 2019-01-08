@@ -1,4 +1,4 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.25
+COVERT BITOPS Autoconfiguring Loader/Depacker V2.26
 ---------------------------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -53,7 +53,8 @@ Features:
 
 - PAL/NTSC and SuperCPU compatibility
 
-- 2-letter filenames (smaller loader size) or long filenames
+- 2-letter filenames (smaller loader size) or null-terminated long filenames.
+  Long filenames also support using the * wildcard to terminate the name search
 
 - Loading of an EXOMIZER or PUCRUNCH compressed file, or an unpacked file
   * Will load under ROMs and I/O area
@@ -456,3 +457,5 @@ v2.24   - Further improvement to drive-detection.
         - Added proper LED blinking for 1581 / CMD FD.
 
 v2.25   - Fixed long file name directory search.
+
+v2.26   - Added * wildcard support to long file names.

@@ -1,4 +1,4 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.24
+COVERT BITOPS Autoconfiguring Loader/Depacker V2.25
 ---------------------------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -178,6 +178,18 @@ Returns: -
 Modifies: A
 
 
+INITFASTLOAD
+
+Reinitializes the drivecode if necessary. Call this when you have performed 
+Kernal file I/O, like saving files, and want to optimize the startup time for
+resuming fastloading operation. If you don't call this, it will be automatically
+called when opening the next file using fastloading.
+
+Parameters: -
+Returns: -
+Modifies: A,X,Y
+
+
 Assembling the loader
 ---------------------
 
@@ -322,7 +334,7 @@ instructions, the wrong videobank will be displayed.
 
 You have to disable sprites yourself when doing Kernal loading using the slow
 serial protocol, or when using the 2-bit fastloading protocol, or else loading
-may hang. Check the variable "slowirq" (and also "usefastload" with the 2-bit 
+may hang. Check the variable "slowirq" (and also "usefastload" with the 2-bit
 protocol): if either is nonzero, sprites have to be switched off.
 
 
@@ -372,7 +384,7 @@ can use the provided DISABLEIO and ENABLEIO routines. For example:
   jsr disableio
   sta (data_under_io),y
   jsr enableio
-  
+
 
 IDE64 special considerations
 ----------------------------
@@ -440,5 +452,7 @@ v2.22   - Bugfixed the Exomizer forward depackroutine.
 v2.23   - Fixed the drive-detection to work better with multidrive setups.
 
 v2.24   - Further improvement to drive-detection.
-        - Added possibility for 2-bit protocol.
+        - Readded possibility for 2-bit protocol.
         - Added proper LED blinking for 1581 / CMD FD.
+
+v2.25   - Fixed long file name directory search.

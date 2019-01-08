@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Autoconfiguring Loader/Depacker V2.24
+; COVERT BITOPS Autoconfiguring Loader/Depacker V2.25
 ; with 1541/1571/1581/CMD FD/CMD HD/IDE64/Fastdrive-emu autodetection & support
 ;
 ; EXOMIZER 2 depack by Magnus Lind & Krill
@@ -1300,7 +1300,7 @@ kernaloff:      lda #$36
 il_ok:          rts
 
 ;-------------------------------------------------------------------------------
-; INITFASTLOADER
+; INITFASTLOAD
 ;
 ; Uploads the fastloader to disk drive memory and starts it.
 ;
@@ -1353,7 +1353,7 @@ ifl_nextpacket: lda fa                  ;Set drive to listen
                 ldx #$05
                 dec loadtempreg         ;All "packets" sent?
                 bpl ifl_sendmw
-ifl_sendme:     lda ifl_mestring-1,x      ;Send M-E command (backwards)
+ifl_sendme:     lda ifl_mestring-1,x    ;Send M-E command (backwards)
                 jsr ciout
                 dex
                 bne ifl_sendme
@@ -1364,11 +1364,11 @@ ifl_error:      jmp kernaloff
 ; DRIVECODE - Code executed in the disk drive.
 ;-------------------------------------------------------------------------------
 
-drivecode:                                  ;Address in C64's memory
-                rorg drvstart               ;Address in diskdrive's memory
+drivecode:                              ;Address in C64's memory
+                rorg drvstart           ;Address in diskdrive's memory
 
-drvmain:        cli                         ;File loop: Get filename first
-                lda #$00                    ;Set DATA & CLK high
+drvmain:        cli                     ;File loop: Get filename first
+                lda #$00                ;Set DATA & CLK high
 drv_1800ac0:    sta $1800
                 if LONG_NAMES>0
                 ldx #$00
@@ -1378,11 +1378,12 @@ drv_1800ac0:    sta $1800
 drv_nameloop:   ldy #$08                ;Bit counter
 drv_namebitloop:
 drv_1800ac1:    lda $1800
-                bmi drv_quit            ;Quit if ATN is low
-                and #$05                ;Wait for CLK or DATA going low
+                bpl drv_noquit          ;Quit if ATN is low
+                jmp drv_quit
+drv_noquit:     and #$05                ;Wait for CLK or DATA going low
                 beq drv_namebitloop
                 lsr                     ;Read the data bit
-                    lda #$02            ;Pull the other line low to acknowledge
+                lda #$02                ;Pull the other line low to acknowledge
                 bcc drv_namezero ;the bit being received
                 lda #$08
 drv_namezero:   ror drv_filename,x      ;Store the data bit
@@ -1399,13 +1400,13 @@ drv_1800ac4:    sta $1800               ;Set both lines high
                 sei                     ;Disable interrupts after first byte
                 if LONG_NAMES>0
                 inx
-                lda drv_filename-1,x ;End of filename?
+                lda drv_filename-1,x    ;End of filename?
                 bne drv_nameloop
                 else
                 dex
                 bpl drv_nameloop
                 endif
-                
+
                 if TWOBIT_PROTOCOL=0
                 lda #$08                ;CLK low, data isn't available
 drv_1800ac5:    sta $1800
@@ -1425,12 +1426,14 @@ drv_nextfile:   lda buf,y               ;File type must be PRG
                 sty drv_namecmploop+1
                 lda #$a0                ;Make an endmark at the 16th letter
                 sta buf+19,y
-drv_namecmploop:lda buf,x
-                cmp drv_filename-3,x    ;Check against each letter of filename
-                bne drv_namedone        ;until at the endzero
+drv_namecmploop:lda buf,x               ;Check against each letter of filename,
+                cmp drv_filename-3,x    ;break on mismatch
+                bne drv_namedone
                 inx
                 bne drv_namecmploop
-drv_namedone:   cmp #$a0                ;If got to a $a0, name correct
+drv_namedone:   cmp #$a0                ;If got endmark in both filenames, found
+                bne drv_notfound
+                lda drv_filename-3,x
                 beq drv_found
                 else
                 lda buf+3,y

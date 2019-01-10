@@ -136,7 +136,7 @@ zp_bitbuf       = zpbase+5
 zp_dest_lo      = zpbase+6
 zp_dest_hi      = zpbase+7
 
-exomizer_error: rts
+loadfile_exomizer_fail: rts
 loadfile_exomizer:
                 jsr openfile
 
@@ -147,12 +147,9 @@ loadfile_exomizer:
 ;
 ; This source code is altered and is not the original version found on
 ; the Exomizer homepage.
-; It contains modifications made by Krill/Plush to depack a packed file
-; crunched forward and to work with his loader.
-;
-; Further modification (error handling, loading under IO area) &
-; bugfixing of the forward decruncher by Lasse Öörni
-; -------------------------------------------------------------------
+; It contains modifications made by Krill/Plush to decompress a compressed file
+; compressed forward and to work with his loader.
+
 ;
 ; Copyright (c) 2002 - 2005 Magnus Lind.
 ;
@@ -191,57 +188,54 @@ loadfile_exomizer:
 ; no constraints on register content, however the
 ; decimal flag has to be #0 (it almost always is, otherwise do a cld)
 exomizer:
-
-  if FORWARD_DECRUNCHING > 0
-
 ; -------------------------------------------------------------------
 ; init zeropage, x and y regs.
 ;
-  ldx #3
-  ldy #0
+    ldy #0
+    ldx #3
 init_zp:
-  jsr getbyte
-  bcs exomizer_error ;File not found error, only checked in the beginning
-  sta zp_bitbuf-1,x
-  dex
-  bne init_zp
+    jsr getbyte         ; preserve flags, exit on error
+    bcs loadfile_exomizer_fail ; File not found error, only checked in the beginning
+    sta zp_bitbuf-1,x
+    dex
+    bne init_zp
 
 ; -------------------------------------------------------------------
 ; calculate tables (50 bytes)
 ; x and y must be #0 when entering
 ;
 nextone:
-  inx
-  tya
-  and #$0f
-  beq shortcut    ; start with new sequence
+    inx
+    tya
+    and #$0f
+    beq shortcut        ; start with new sequence
 
-  txa          ; this clears reg a
-  lsr          ; and sets the carry flag
-  ldx tabl_bi-1,y
+    txa             ; this clears reg a
+    lsr             ; and sets the carry flag
+    ldx tabl_bi-1,y
 rolle:
-  rol
-  rol zp_bits_hi
-  dex
-  bpl rolle    ; c = 0 after this (rol zp_bits_hi)
+    rol
+    rol zp_bits_hi
+    dex
+    bpl rolle       ; c = 0 after this (rol zp_bits_hi)
 
-  adc tabl_lo-1,y
-  tax
+    adc tabl_lo-1,y
+    tax
 
-  lda zp_bits_hi
-  adc tabl_hi-1,y
+    lda zp_bits_hi
+    adc tabl_hi-1,y
 shortcut:
-  sta tabl_hi,y
-  txa
-  sta tabl_lo,y
+    sta tabl_hi,y
+    txa
+    sta tabl_lo,y
 
-  ldx #4
-  jsr get_bits    ; clears x-reg.
-  sta tabl_bi,y
-  iny
-  cpy #52
-  bne nextone
-  beq begin
+    ldx #4
+    jsr get_bits        ; clears x-reg.
+    sta tabl_bi,y
+    iny
+    cpy #52
+    bne nextone
+    beq begin
 
 ; -------------------------------------------------------------------
 ; get bits (29 bytes)
@@ -258,42 +252,50 @@ shortcut:
 ;   y is untouched
 ; -------------------------------------------------------------------
 get_bits:
-  lda #$00
-  sta zp_bits_hi
-  cpx #$01
-  bcc bits_done
+    lda #$00
+    sta zp_bits_hi
+    cpx #$01
+    bcc bits_done
 bits_next:
-  lsr zp_bitbuf
-  bne bits_ok
-  pha
-  jsr getbyte
-  sec
-  ror
-  sta zp_bitbuf
-  pla
+    lsr zp_bitbuf
+    bne bits_ok
+    pha
+  if FORWARD_DECRUNCHING = 0
+literal_get_byte:
+    php
+    jsr getbyte
+    plp
+    bcc literal_byte_gotten
+  else
+    jsr getbyte
+    sec
+  endif
+    ror
+    sta zp_bitbuf
+    pla
 bits_ok:
-  rol
-  rol zp_bits_hi
-  dex
-  bne bits_next
+    rol
+    rol zp_bits_hi
+    dex
+    bne bits_next
 bits_done:
-  rts
+    rts
 
-exomizer_ok:
-  clc
-  rts
+exomizer_eof:
+    clc
+    rts
+
+  if FORWARD_DECRUNCHING > 0
 
 ; -------------------------------------------------------------------
-; literal sequence handling
+; literal sequence handling, forward decrunching
 ;
-  if LITERAL_SEQUENCES_NOT_USED=0
 literal_start:
-  ldx #$10    ; these 16 bits
-  jsr get_bits; tell the length of the sequence
-  ldx zp_bits_hi
-  endif
+    ldx #$10    ; these 16 bits
+    jsr get_bits; tell the length of the sequence
 literal_start1: ; if literal byte, a = 1, zp_bits_hi = 0
-  sta zp_len_lo
+    sta zp_len_lo
+    ldx zp_bits_hi
 
 ; -------------------------------------------------------------------
 ; main copy loop
@@ -301,360 +303,215 @@ literal_start1: ; if literal byte, a = 1, zp_bits_hi = 0
 ; y = length lo
 ;
 copy_start:
-  ldy #$00
+    stx zp_bits_hi
+    ldy #$00
 copy_next:
-  bcs copy_noliteral
-  jsr getbyte
+  if LITERAL_SEQUENCES_NOT_USED = 0
+    bcs copy_noliteral
+    jsr getbyte
+    dc.b $2c ; skip next instruction
 copy_noliteral:
-  if LOAD_UNDER_IO > 0
-  jsr disableio
   endif
-  bcc copy_store
-  lda (zp_src_lo),y
-copy_store:
-  sta (zp_dest_lo),y
-  if LOAD_UNDER_IO > 0
-  jsr enableio
+    lda (zp_src_lo),y
+    sta (zp_dest_lo),y
+    iny
+    bne copy_nohigh
+    dex
+    inc zp_dest_hi
+    inc zp_src_hi
+copy_nohigh:
+    tya
+    eor zp_len_lo
+    bne copy_next
+    txa
+    bne copy_next
+    tya
+    clc
+    adc zp_dest_lo
+    sta zp_dest_lo
+    bcc copy_nocarry
+    inc zp_dest_hi
+copy_nocarry:
+  else
+
+; -------------------------------------------------------------------
+; main copy loop
+; x = length hi
+; y = length lo
+; (18(16) bytes)
+;
+copy_next_hi:
+    dex
+    dec zp_dest_hi
+    dec zp_src_hi
+copy_next:
+    dey
+  if LITERAL_SEQUENCES_NOT_USED = 0
+    bcc literal_get_byte
   endif
-  iny
-  bne copy_skiphi
-  dex
-  inc zp_dest_hi
-  inc zp_src_hi
-copy_skiphi:
-  tya
-  eor zp_len_lo
-  bne copy_next
-  txa
-  bne copy_next
-  tya
-  clc
-  adc zp_dest_lo
-  sta zp_dest_lo
-  bcc copy_skiphi2
-  inc zp_dest_hi
-copy_skiphi2:
+    lda (zp_src_lo),y
+literal_byte_gotten: ; y = 0 when this label is jumped to
+    sta (zp_dest_lo),y
+copy_start:
+    tya
+    bne copy_next
+    txa
+    bne copy_next_hi
+
+  endif
 
 ; -------------------------------------------------------------------
 ; decruncher entry point, needs calculated tables (21(13) bytes)
 ; x and y must be #0 when entering
 ;
 begin:
-  inx
-  jsr get_bits
-  tay
-  bne literal_start1; if bit set, get a literal byte
-getgamma:
-  inx
-  jsr bits_next
-  lsr
-  iny
-  bcc getgamma
-  cpy #$11
-  beq exomizer_ok   ; gamma = 17   : end of file
-  if LITERAL_SEQUENCES_NOT_USED=0
-  bcs literal_start ; gamma = 18   : literal sequence
+  if LITERAL_SEQUENCES_NOT_USED = 0
+    ; literal sequence handling
+    inx
+    jsr get_bits
+    tay
+    bne literal_start1; if bit set, get a literal byte
+  else
+    dey
   endif
-                    ; gamma = 1..16: sequence
+getgamma:
+    inx
+    jsr bits_next
+    lsr
+    iny
+    bcc getgamma
+  if LITERAL_SEQUENCES_NOT_USED > 0
+    beq literal_start
+  endif
+    cpy #$11; 17
 
+  if LITERAL_SEQUENCES_NOT_USED = 0
+    ; literal sequence handling
+  if FORWARD_DECRUNCHING > 0
+    beq exomizer_eof  ; gamma = 17   : end of file
+    bcs literal_start ; gamma = 18   : literal sequence
+                      ; gamma = 1..16: sequence
+  else ; backward decrunching
+    bcc sequence_start; gamma = 1..16: sequence
+    beq exomizer_eof  ; gamma = 17   : end of file
+                      ; gamma = 18   : literal sequence
+    ; -------------------------------------------------------------------
+    ; literal sequence handling (13(2) bytes), backward decrunching
+    ;
+    ldx #$10    ; these 16 bits
+    jsr get_bits; tell the length of the sequence
+literal_start1: ; if literal byte, a = 1, zp_bits_hi = 0
+    sta zp_len_lo
+    ldx zp_bits_hi
+    ldy #0
+    bcc literal_start; jmp
+
+sequence_start:
+  endif; backward decrunching
+  else
+    bcs bits_done
+  endif
 ; -------------------------------------------------------------------
 ; calulate length of sequence (zp_len) (11 bytes)
 ;
-  ldx tabl_bi-1,y
-  jsr get_bits
-  adc tabl_lo-1,y  ; we have now calculated zp_len_lo
-  sta zp_len_lo
+    ldx tabl_bi - 1,y
+    jsr get_bits
+    adc tabl_lo - 1,y   ; we have now calculated zp_len_lo
+    sta zp_len_lo
 ; -------------------------------------------------------------------
 ; now do the hibyte of the sequence length calculation (6 bytes)
-  lda zp_bits_hi
-  adc tabl_hi-1,y  ; c = 0 after this.
-  pha
+    lda zp_bits_hi
+    adc tabl_hi - 1,y   ; c = 0 after this.
+    pha
 ; -------------------------------------------------------------------
 ; here we decide what offset table to use (20 bytes)
 ; x is 0 here
 ;
-  bne nots123
-  ldy zp_len_lo
-  cpy #$04
-  bcc size123
+    bne nots123
+    ldy zp_len_lo
+    cpy #$04
+    bcc size123
 nots123:
-  ldy #$03
+    ldy #$03
 size123:
-  ldx tabl_bit-1,y
-  jsr get_bits
-  adc tabl_off-1,y  ; c = 0 after this.
-  tay      ; 1 <= y <= 52 here
+    ldx tabl_bit - 1,y
+    jsr get_bits
+    adc tabl_off - 1,y  ; c = 0 after this.
+    tay         ; 1 <= y <= 52 here
+; -------------------------------------------------------------------
+  if FORWARD_DECRUNCHING = 0
+; Here we do the dest_lo -= len_lo subtraction to prepare zp_dest
+; but we do it backwards:   a - b == (b - a - 1) ^ ~0 (C-syntax)
+; (16(16) bytes)
+    lda zp_len_lo
+literal_start:
+    sbc zp_dest_lo
+    bcc noborrow
+    dec zp_dest_hi
+noborrow:
+    eor #$ff
+    sta zp_dest_lo
+    cpy #$01        ; y < 1 then literal
+  if LITERAL_SEQUENCES_NOT_USED = 0
+    bcc pre_copy
+  else
+    bcc literal_get_byte
+  endif
+  endif
 
 ; -------------------------------------------------------------------
 ; calulate absolute offset (zp_src)
 ;
-  ldx tabl_bi,y
-  jsr get_bits
-  adc tabl_lo,y
-  bcc skipcarry
-  inc zp_bits_hi
+    ldx tabl_bi,y
+    jsr get_bits
+    adc tabl_lo,y
+    bcc skipcarry
+    inc zp_bits_hi
+  if FORWARD_DECRUNCHING > 0
 skipcarry:
-  sec
-  eor #$ff
-  adc zp_dest_lo
-  sta zp_src_lo
-  lda zp_dest_hi
-  sbc zp_bits_hi
-  sbc tabl_hi,y
-  sta zp_src_hi
+    sec
+    eor #$ff
+    adc zp_dest_lo
+    sta zp_src_lo
+    lda zp_dest_hi
+    sbc zp_bits_hi
+    sbc tabl_hi,y
+    sta zp_src_hi
+  else
+    clc
+skipcarry:
+    adc zp_dest_lo
+    sta zp_src_lo
+    lda zp_bits_hi
+    adc tabl_hi,y
+    adc zp_dest_hi
+    sta zp_src_hi
+  endif
 
 ; -------------------------------------------------------------------
 ; prepare for copy loop (8(6) bytes)
 ;
-  pla
-  tax
-  sec
-  jmp copy_start
-
-  else
-
-; -------------------------------------------------------------------
-; init zeropage, x and y regs. (12 bytes)
-;
-  ldy #0
-  ldx #3
-init_zp:
-  jsr getbyte
-  bcs exomizer_error ;File not found error, checked only in the beginning
-  sta zp_bitbuf-1,x
-  dex
-  bne init_zp
-
-; -------------------------------------------------------------------
-; calculate tables (50 bytes)
-; x and y must be #0 when entering
-;
-nextone:
-  inx
-  tya
-  and #$0f
-  beq shortcut              ; starta på ny sekvens
-  txa                       ; this clears reg a
-  lsr                       ; and sets the carry flag
-  ldx tabl_bi-1,y
-rolle:
-  rol
-  rol zp_bits_hi
-  dex
-  bpl rolle                 ; c = 0 after this (rol zp_bits_hi)
-  adc tabl_lo-1,y
-  tax
-  lda zp_bits_hi
-  adc tabl_hi-1,y
-shortcut:       
-  sta tabl_hi,y
-  txa
-  sta tabl_lo,y
-  ldx #4
-  jsr get_bits              ; clears x-reg.
-  sta tabl_bi,y
-  iny
-  cpy #52
-  bne nextone
-  ldy #0
-  beq begin
-
-; -------------------------------------------------------------------
-; get bits (29 bytes)
-;
-; args:
-;   x = number of bits to get
-; returns:
-;   a = #bits_lo
-;   x = #0
-;   c = 0
-;   z = 1
-;   zp_bits_hi = #bits_hi
-; notes:
-;   y is untouched
-; -------------------------------------------------------------------
-get_bits:
-  lda #$00
-  sta zp_bits_hi
-  cpx #$01
-  bcc bits_done
-bits_next:
-  lsr zp_bitbuf
-  bne bits_ok
-  pha
-literal_get_byte:
-  php
-  jsr getbyte
-  plp
-  bcc literal_byte_gotten
-  ror
-  sta zp_bitbuf
-  pla
-bits_ok:
-  rol
-  rol zp_bits_hi
-  dex
-  bne bits_next
-bits_done:
-  rts
-
-exomizer_ok:
-  clc
-  rts
-
-; -------------------------------------------------------------------
-; main copy loop (18(16) bytes)
-;
-copy_next_hi:
-  dex
-  dec zp_dest_hi
-  dec zp_src_hi
-copy_next:
-  dey
+    pla
+    tax
   if LITERAL_SEQUENCES_NOT_USED = 0
-  bcc literal_get_byte
-  endif
-literal_byte_gotten:
-  if LOAD_UNDER_IO > 0
-  jsr disableio
-  endif
-  bcc copy_store
-  lda (zp_src_lo),y
-copy_store:
-  sta (zp_dest_lo),y
-  if LOAD_UNDER_IO > 0
-  jsr enableio
-  endif
-copy_start:
-  tya
-  bne copy_next
-begin:
-  txa
-  bne copy_next_hi
-; -------------------------------------------------------------------
-; decruncher entry point, needs calculated tables (21(13) bytes)
-; x and y must be #0 when entering
-;
-  if LITERAL_SEQUENCES_NOT_USED = 0
-  inx
-  jsr get_bits
-  tay
-  bne literal_start1
-  else
-  dey
-  endif
-begin2:
-  inx
-  jsr bits_next
-  lsr
-  iny
-  bcc begin2
-  if LITERAL_SEQUENCES_NOT_USED > 0
-  beq literal_start
-  endif
-  cpy #$11
-  if LITERAL_SEQUENCES_NOT_USED = 0
-  bcc sequence_start
-  beq exomizer_ok
-; -------------------------------------------------------------------
-; literal sequence handling (13(2) bytes)
-;
-  ldx #$10
-  jsr get_bits
-literal_start1: 
-  sta zp_len_lo
-  ldx zp_bits_hi
-  ldy #0
-  bcc literal_start
-sequence_start:
-  else
-  bcs exomizer_ok
-  endif
-; -------------------------------------------------------------------
-; calulate length of sequence (zp_len) (11 bytes)
-;
-  ldx tabl_bi-1,y
-  jsr get_bits
-  adc tabl_lo-1,y         ; we have now calculated zp_len_lo
-  sta zp_len_lo
-; -------------------------------------------------------------------
-; now do the hibyte of the sequence length calculation (6 bytes)
-  lda zp_bits_hi
-  adc tabl_hi-1,y         ; c = 0 after this.
-  pha
-; -------------------------------------------------------------------
-; here we decide what offset table to use (20 bytes)
-; x is 0 here
-;
-  bne nots123
-  ldy zp_len_lo
-  cpy #$04
-  bcc size123
-nots123:
-  ldy #$03
-size123:        
-  ldx tabl_bit-1,y
-  jsr get_bits
-  adc tabl_off-1,y          ; c = 0 after this.
-  tay                       ; 1 <= y <= 52 here
-; -------------------------------------------------------------------
-; Here we do the dest_lo -= len_lo subtraction to prepare zp_dest
-; but we do it backwards:                a - b == (b - a - 1) ^ ~0 (C-syntax)
-; (16(16) bytes)
-  lda zp_len_lo
-literal_start:  
-  sbc zp_dest_lo            ; literal enters here with y = 0, c = 1
-  bcc noborrow
-  dec zp_dest_hi
-noborrow:
-  eor #$ff
-  sta zp_dest_lo
-  cpy #$01                  ; y < 1 then literal
-  if LITERAL_SEQUENCES_NOT_USED = 0
-  bcc pre_copy
-  else
-  bcc literal_get_byte
-  endif
-; -------------------------------------------------------------------
-; calulate absolute offset (zp_src) (27 bytes)
-;
-  ldx tabl_bi,y
-  jsr get_bits;
-  adc tabl_lo,y
-  bcc skipcarry
-  inc zp_bits_hi
-  clc
-skipcarry:
-  adc zp_dest_lo
-  sta zp_src_lo
-  lda zp_bits_hi
-  adc tabl_hi,y
-  adc zp_dest_hi
-  sta zp_src_hi
-; -------------------------------------------------------------------
-; prepare for copy loop (8(6) bytes)
-;
-  pla
-  tax
-  sec
-  if LITERAL_SEQUENCES_NOT_USED = 0
+    ; literal sequence handling
+    sec
+  if FORWARD_DECRUNCHING = 0
 pre_copy:
-  ldy zp_len_lo
-  jmp copy_start
+    ldy zp_len_lo
+  endif
+    jmp copy_start
   else
-  ldy zp_len_lo
-  bcs copy_start
+    ldy zp_len_lo
+    bcc copy_start
   endif
-
-  endif
-
 ; -------------------------------------------------------------------
 ; two small static tables (6(6) bytes)
 ;
 tabl_bit:
-	.byte 2,4,4
+    dc.b 2,4,4
 tabl_off:
-	.byte 48,32,16
+    dc.b 48,32,16
 ; -------------------------------------------------------------------
 ; end of decruncher
 ; -------------------------------------------------------------------
@@ -714,7 +571,7 @@ exomizer:
         ldx #3
 init_zp:
         jsr getbyte         ; preserve flags, exit on error
-        bcs exomizer_error  ; File not found error, only checked in the beginning
+        bcs loadfile_exomizer_fail  ; File not found error, only checked in the beginning
         sta zp_bitbuf-1,x
         dex
         bne init_zp
@@ -969,7 +826,7 @@ get_literal_byte:
 ;
 exit_or_lit_seq:
   if LITERAL_SEQUENCES_NOT_USED = 0
-        beq decr_exit
+        beq exomizer_eof
         jsr getbyte
   if MAX_SEQUENCE_LENGTH_256 = 0
         sta zp_len_hi
@@ -982,7 +839,7 @@ exit_or_lit_seq:
         sec
         bcs copy_next
     endif
-decr_exit:
+exomizer_eof:
   endif
         clc
         rts

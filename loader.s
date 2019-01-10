@@ -667,7 +667,8 @@ zp_len_hi       = zp_bits_lo
 ; Exomizer 3
 ;
 ; This source code is altered and is not the original version found on
-; the Exomizer homepage.
+; the Exomizer homepage. Forward decrunching modifications improved
+; based on the version in Krill's loader.
 ; -------------------------------------------------------------------
 ;
 ; Copyright (c) 2002 - 2018 Magnus Lind.
@@ -880,19 +881,15 @@ gbnc2_ok:
   else
         lda tabl_bi,x
         jsr get_bits
+        clc
         adc tabl_lo,x
-        bcc skipcarry
-        inc zp_bits_hi
-        clc
-skipcarry:
         eor #$ff
-        adc #$01
         sta zp_src_lo
-        lda zp_dest_hi
-        sbc zp_bits_hi
-        sbc tabl_hi,x
+        lda zp_bits_hi
+        adc tabl_hi,x
+        eor #$ff
+        adc zp_dest_hi
         sta zp_src_hi
-        clc
   endif
 
 ; -------------------------------------------------------------------
@@ -913,7 +910,11 @@ copy_skip_hi:
         dey
   endif
   if LITERAL_SEQUENCES_NOT_USED = 0
+  if FORWARD_DECRUNCHING > 0
+        bcc get_literal_byte
+    else
         bcs get_literal_byte
+  endif
   endif
   if LOAD_UNDER_IO > 0
         jsr disableio
@@ -956,8 +957,12 @@ get_literal_byte:
   if LOAD_UNDER_IO > 0
         jsr disableio
   endif
+  if FORWARD_DECRUNCHING > 0
+        bcc literal_byte_gotten
+  else
         sec
         bcs literal_byte_gotten
+  endif
   endif
 ; -------------------------------------------------------------------
 ; exit or literal sequence handling (16(12) bytes)
@@ -971,8 +976,12 @@ exit_or_lit_seq:
   endif
         jsr getbyte
         tax
+    if FORWARD_DECRUNCHING > 0
+        bcc copy_next
+    else
         sec
         bcs copy_next
+    endif
 decr_exit:
   endif
         clc

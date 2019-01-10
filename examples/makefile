@@ -1,5 +1,9 @@
+all: examples.d64 examples.d81
+
 examples.d64: test_unp.prg test_exom.prg test_exom3.prg test_pucr.prg test_1bit.prg datafile.exo datafile.exo3 datafile.puc examples.seq
 	makedisk examples.d64 examples.seq "LOADER EXAMPLES   LE 2A" 12
+
+examples.d81: examples.d64 examd81.seq
 	c1541 < examd81.seq
 
 test_exom.prg: test_exom.s ../loader.s ../cfg_exom.s

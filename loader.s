@@ -862,12 +862,11 @@ gb_ok:
         rol
         bmi gb_next
 gb_skip:
-        bvs gb_get_hi
-        rts
-gb_get_hi:
+        bvc gb_get_done
         sta zp_bits_hi
         jsr getbyte
         sec
+gb_get_done:
         rts
 
 ; -------------------------------------------------------------------

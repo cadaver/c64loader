@@ -1,4 +1,4 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.28
+COVERT BITOPS Autoconfiguring Loader/Depacker V2.29
 ---------------------------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -471,3 +471,6 @@ v2.28   - Drivecode will retry read sector indefinitely; read error return code
           Kernal ROM.
         - The "slowirq" variable is removed, as maintaining it was extra
           overhead. The variable "useserial" can be watched instead.
+          
+v2.29   - Increase 1-bit protocol fillbuffer predelay to prevent occasional 
+          hang on NTSC.

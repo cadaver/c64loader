@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Autoconfiguring Loader/Depacker V2.28
+; COVERT BITOPS Autoconfiguring Loader/Depacker V2.29
 ; with 1541/1571/1581/CMD FD/CMD HD/IDE64/Fastdrive-emu autodetection & support
 ;
 ; EXOMIZER 2 & 3 depack by Magnus Lind & Krill
@@ -1268,7 +1268,7 @@ fastload_fillbuffer:
                 beq fileclosed
                 pha
                 sta $d07a               ;SCPU to slow mode
-                
+
                 if TWOBIT_PROTOCOL > 0
                 ldx #$00
                 lda #$03
@@ -1319,6 +1319,7 @@ fastload_eor:   eor #$00
                 pla
                 pha
                 pla
+                nop
 fastload_fillbufferloop:                  ;1bit receive code
                 nop
                 nop
@@ -1338,7 +1339,7 @@ fastload_store: ror loadbuffer
                 endif
                 inc fastload_store+1
                 bne fastload_fillbufferloop
-                
+
                 endif
 
 fillbuffer_common:

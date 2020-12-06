@@ -511,7 +511,7 @@ EL_ListenAndSecond:
                 jsr EL_SendByteATN
                 lda $dd00
                 and #$03
-                ora #$10                        ;after the secondary address, just clk low for further non-atn bytes
+                ora #$10                        ;After the secondary address, just CLK low for further non-atn bytes
                 sta $dd00
                 rts
 
@@ -522,12 +522,12 @@ EL_SendBytePrepare:
                 sta EL_SetLinesIdle+1
                 rts
 
-EL_SendByteATN: sta loadTempReg
-                lda #$08
+EL_SendByteATN: jsr EL_SendBytePrepare
+                ora #$08
                 bne EL_SendByteCommon
 
 EL_SendByte:
-EL_WaitDataLow: bit $dd00                       ;for non-atn bytes, wait for data low before we continue
+EL_WaitDataLow: bit $dd00                       ;for non-ATN bytes, wait for DATA low before we continue
                 bmi EL_WaitDataLow
                 jsr EL_SendBytePrepare
 EL_SendByteCommon:

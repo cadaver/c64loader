@@ -3,6 +3,9 @@ COVERT BITOPS Autoconfiguring Loader V3.0
 
 Freely usable for all kinds of C64 projects.
 
+V3.x is a further size-optimized game-oriented loader with limitations, based on
+c64gameframework / MW ULTRA loader.
+
 Credits:
 Christoph Thelen (DocBacardi/The Dreams)
   - Help with 1581/CMD FD/CMD HD support
@@ -21,7 +24,6 @@ conditional assembly and relocation to compile in or leave out the various
 features and to compile the drivecode and overlays. To use on other assemblers,
 you'll have to convert to the format of your assembler.
 
-
 Covert BitOps site:
 http://covertbitops.c64.org
 
@@ -32,9 +34,6 @@ loorni@gmail.com
 Features, assumptions & limitations
 -----------------------------------
 
-- V3.x is a game-oriented loader with limitations, based on c64gameframework / 
-  MW ULTRA loader. The low-level runtime part is less than one page of memory.
-
 - Autodetection of drive programming capability & serial protocol
   * Fastloader uploaded to drives that support it:
     1541, 1571, 1581, CMD FD and CMD HD
@@ -44,13 +43,12 @@ Features, assumptions & limitations
   * SD2IEC is detected and a separate compatible fastloader protocol (ELoad)
     is used
 
-- PAL/NTSC and SuperCPU compatibility
+- PAL/NTSC/Drean compatibility.
 
-- Compared to V2.x versions of loader, only 2-bit fastloading protocol is
-  available.
+- Only 2-bit fastloading protocol is available.
 
 - Only 2-letter filenames which are hexadecimal numbers are supported. The
-  fastloader will precache directory to speed up repeated searches.
+  drivecode will precache directory to speed up repeated searches.
 
 - Loader assumes Kernal will be off ($35 value in $01) during runtime.
   It will disable timer interrupt and NMI from Restore keypress when
@@ -69,8 +67,8 @@ Features, assumptions & limitations
   device (loaderMode 0)
 
 
-Including in a program:
------------------------
+Including in a program
+----------------------
 
 - Include config.s first; modify it according to your needs.
 - Then include loader.s where you need the resident loader runtime.
@@ -80,8 +78,8 @@ Including in a program:
   part and can be overwritten after calling InitLoader.
 
 
-Summary of user-callable routines:
-----------------------------------
+Summary of user-callable routines
+---------------------------------
 
 Initialization (disposable)
 ---------------------------
@@ -89,7 +87,8 @@ Initialization (disposable)
 InitLoader
 
 Detects drive type and whether it supports fastloading, and if it uses the
-serial protocol. Must only be called only once in the beginning.
+serial protocol. Must only be called only once in the beginning before using
+the other routines.
 
 Parameters: C=0 allow detection, C=1 default to Kernal stock protocol
             (loaderMode 0)
@@ -107,7 +106,7 @@ nonzero).
 
 Parameters: A file number
 Returns:    fileOpen set to nonzero if successful
-Modifies:   A,X,Y
+Modifies:   A,X,Y,loader ZP variables
 
 
 GetByte
@@ -118,7 +117,7 @@ before you can open the next file.
 
 Parameters: -
 Returns:    A byte, fileOpen set to zero on EOF
-Modifies:   A
+Modifies:   A,loader ZP variables
 
 
 SaveFile
@@ -128,7 +127,7 @@ Saves a file.
 Parameters: A file number, zpSrcLo-zpSrcHi startaddress, zpBitsLo-zpBitsHi
             amount of bytes
 Returns:    -
-Modifies:   A,X,Y
+Modifies:   A,X,Y,loader ZP variables
 
 
 SetSpriteRange
@@ -162,7 +161,8 @@ Loads a file into the address specified by the file's 2 first bytes
 
 Parameters: A file number
 Returns:    C=0 if OK, C=1 if failed to load
-Modifies:   A,X,Y
+Modifies:   A,X,Y,loader ZP variables
+
 
 LoadUnpackedRaw (in loadunpacked.s)
 
@@ -170,7 +170,8 @@ Loads a raw file (no load address) into the specified destination.
 
 Parameters: A file number, X/Y load address
 Returns:    C=0 if OK, C=1 if failed to load
-Modifies:   A,X,Y
+Modifies:   A,X,Y,loader ZP variables
+
 
 LoadExomizer3Raw (in loadexomizer3.s)
 
@@ -179,7 +180,7 @@ destination.
 
 Parameters: A file number, X/Y load address
 Returns:    C=0 if OK, C=1 if failed to load
-Modifies:   A,X,Y
+Modifies:   A,X,Y,loader ZP variables
 
 
 Diskside change detection (1541)

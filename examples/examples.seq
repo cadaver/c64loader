@@ -1,4 +1,5 @@
 test_unp.prg UNPACKED_LOADER
 test_exo3.prg EXOMIZER3_LOADER
+test_spr.prg SPRITETEST
 datafile 00
 datafile.exo3 01

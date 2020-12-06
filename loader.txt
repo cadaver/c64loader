@@ -1,34 +1,26 @@
-COVERT BITOPS Autoconfiguring Loader/Depacker V2.29
----------------------------------------------------
+COVERT BITOPS Autoconfiguring Loader V3.0
+-----------------------------------------
 
 Freely usable for all kinds of C64 projects.
 
 Credits:
-Magnus Lind (Zagon) & Gunnar Ruthenberg (Krill/Plush)
-  - EXOMIZER 2 & 3 depack routines
-Pasi "Albert" Ojala
-  - PUCRUNCH depackroutine
 Christoph Thelen (DocBacardi/The Dreams)
   - Help with 1581/CMD FD/CMD HD support
 Wolfram Sang (Ninja/The Dreams)
   - Help with 1581/CMD FD/CMD HD support, SuperRAM & REU code
 Per Olofsson (MagerValp)
   - 2MHz 2-bit protocol timing
+  - Inspiration for save using drivecode
+Thomas Giesel (Skoe)
+  - Original SD2IEC fastloader (ELoad) code
 Lasse Öörni (Cadaver)
   - everything else
 
-Thanks:
-Marko Mäkelä
-  - for inspiration on NMI-disabling and for huge inspiration from irqloader.s
-K.M/TABOO
-  - for inspiration on badline detection and 1-bit transfer
-
 Please note that this source code is in DASM format, and relies heavily on
-conditional assembly to compile in or leave out the various features. To use
-on other assemblers, you'll have to convert to the format of your assembler.
-The rorg/rend directives for assembling the drive code logically at $0500 might
-be most problematic, but there should be an equivalent for them in most
-assemblers.
+conditional assembly and relocation to compile in or leave out the various
+features and to compile the drivecode and overlays. To use on other assemblers,
+you'll have to convert to the format of your assembler.
+
 
 Covert BitOps site:
 http://covertbitops.c64.org
@@ -37,8 +29,11 @@ Email: (Lasse Öörni)
 loorni@gmail.com
 
 
-Features:
----------
+Features and assumptions:
+-------------------------
+
+- V3.x is a game-oriented loader with limitations, based on c64gameframework / 
+  MW ULTRA loader. The runtime part is less than one page of memory.
 
 - Autodetection of drive programming capability & serial protocol
   * Fastloader uploaded to drives that support it:
@@ -46,27 +41,29 @@ Features:
   * IDE64 and "fast drive emulation" are detected: because these don't use
     the slow, IRQ-disabling serial protocol at all, you can still use IRQs
     quite reliably (read more about this below)
-
-- 1-bit & 2-bit fastloading protocols. 2-bit protocol uses both the CLK & DATA
-  lines for data transfer. It is faster, but may delay interrupts about 2 lines,
-  and can not be used when sprites are enabled
+  * SD2IEC is detected and a separate compatible fastloader protocol (ELoad)
+    is used
 
 - PAL/NTSC and SuperCPU compatibility
 
-- 2-letter filenames (smaller loader size) or null-terminated long filenames.
-  Long filenames also support using the * wildcard to terminate the name search
+- Compared to V2.x versions of loader, only 2-bit fastloading protocol is
+  available.
 
-- Loading of an EXOMIZER or PUCRUNCH compressed file, or an unpacked file
-  * Will load under ROMs and I/O area
+- Only 2-letter filenames which are hexadecimal numbers are supported. The
+  fastloader will precache directory to speed up repeated searches.
 
-- Opening a file and reading it byte by byte in the main program
-  (great for custom compressed data for specific purpose)
+- Loader assumes Kernal will be off ($35 value in $01) during runtime.
+  It will disable timer interrupt and NMI from Restore keypress when
+  initializing.
 
-- I/O area switching subroutines
+- Fastloader initializes itself only once, after which the loader init and
+  drivecode can be disposed. Save is supported only to preallocated files
+  on the disk, instead of switching fastloader off and using Kernal routines.
 
-- Configurable, many features can be turned off for smaller size
-
-- Divided into a runtime part and a disposable part
+- Sprite range setting for allowing sprites on while fastloading, but this
+  reduces the available raster line range and slows down loading. Sprites 
+  should be off when the Kernal protocol is used with an actual serial
+  device (loaderMode 0)
 
 
 Summary of user-callable routines:
@@ -75,316 +72,113 @@ Summary of user-callable routines:
 The "disposable" routines
 -------------------------
 
-INITLOADER
+InitLoader
 
 Detects drive type and whether it supports fastloading, and if it uses the
 serial protocol. Must only be called only once in the beginning.
 
-Parameters: -
-Returns:    -
+Parameters: C=0 allow detection, C=1 default to Kernal stock protocol
+            (loaderMode 0)
+Returns:    ntscFlag, loaderMode and fileOpen variables set
 Modifies:   A,X,Y
 
 
 The runtime routines
 --------------------
 
-LOADFILE
-LOADFILE_PUCRUNCH
-LOADFILE_EXOMIZER
+OpenFile
 
-Loads a file.
+Opens a file. Must not be called when file is already open (fileOpen variable
+nonzero).
 
-Parameters: if long filenames in use
-            X:Lowbyte of filename (null-terminated) address
-            Y:Highbyte of filename (null-terminated) address
-            else
-            X:1st letter of filename
-            Y:2nd letter of filename
-Returns:    If Carry 0, file loaded OK
-            If Carry 1, error in A: $00 Premature EOF (when loading packed data)
-                                    $01 Read error
-                                    $02 File not found
+Parameters: A file number
+Returns:    fileOpen set to nonzero if successful
 Modifies:   A,X,Y
 
 
-OPENFILE
+GetByte
 
-Opens a file. If a file is already open, does nothing. This is to be used
-together with GETBYTE calls to read a file byte by byte. Not needed when using
-LOADFILE calls. Note that you will get possible errorcodes only when reading the
-first byte of the file.
+Reads a byte from an opened file. Must only be called if file is still open
+(fileOpen variable is nonzero). Note that you must read until end of file
+before you can open the next file.
 
-Parameters: if long filenames in use
-            X:Lowbyte of filename (null-terminated) address
-            Y:Highbyte of filename (null-terminated) address
-            else
-            X:1st letter of filename
-            Y:2nd letter of filename
+Parameters: -
+Returns:    A byte, fileOpen set to zero on EOF
+Modifies:   A
+
+
+SaveFile
+
+Saves a file.
+
+Parameters: A file number, zpSrcLo-zpSrcHi startaddress, zpBitsLo-zpBitsHi
+            amount of bytes
 Returns:    -
 Modifies:   A,X,Y
 
 
-GETBYTE
+SetSpriteRange
 
-Reads a byte from an opened file. Note that you must read until end of file
-before you can open the next file.
+Set sprite maximum and minimum Y for fastloading when sprites are on. This
+limits the rasterline Y-range on which the 2-bit timed transfer is used.
+No-op in Kernal loading modes (loaderMode 0 & 1)
 
-Parameters: -
-Returns:    If Carry 0, A contains a byte from the file
-            If Carry 1, file has ended. Returncode of A: $00 EOF (No error)
-                                                         $02 File not found
+Parameters: A Y-coordinate of topmost sprite, X Y-coordinate of bottom-
+            most sprite
+Returns:    -
 Modifies:   A
 
-Note that the read error code is only returned with fastloading; if Kernal
-loading fails, the file-not-found error is returned instead.
 
+SetNoSprites
 
-DISABLEIO
+Clear the sprite range and allow 2-bit timed transfer anywhere on screen.
+No-op in Kernal loading modes (loaderMode 0 & 1)
 
-Disables interrupts, saves value of $01 and stores value $34 to $01 (all
-memory is RAM)
+Parameters: A must be 0
+Returns:    -
+Modifies:   -
 
-Parameters: -
-Returns: -
-Modifies: - (Carry flag is not modified, Z- and N- flags are)
 
+Diskside change detection (1541)
+--------------------------------
 
-ENABLEIO
+The loader doesn't provide special facilities to detect diskside. Instead you
+should use a "file not found" condition (OpenFile fails to set fileOpen to
+nonzero) to detect the need for diskside change. The disksides should have 
+different disk IDs.
 
-Restores the $01 value stored by DISABLEIO and enables interrupts. Do not call
-this before calling DISABLEIO first.
 
-Parameters: -
-Returns: -
-Modifies: - (Carry flag is not modified, Z- and N- flags are)
+Kernal loading special considerations
+-------------------------------------
 
+When loaderMode is 0 (Kernal loading) or 1 (Kernal loading, but IRQs allowed
+for devices like IDE64) the loader will call into a "StopIRQ" routine at $02a7
+when opening a file for load or save. By default this is just a RTS instruction,
+but you can replace it with your specific code.
 
-KERNALON
+In loaderMode 0, you should completely shut off raster interrupts, audio and
+sprites in the StopIRQ routine, because IRQs will be delayed unpredictably, and 
+the stock protocol timing will not tolerate sprites being on.
 
-Saves value of $01 and sets $01 to value $36 (Basic ROM off, Kernal ROM on, I/O
-area on).
+Note that in fastload mode the $0200-$02ff area is used instead for the sector
+buffer or ELoad helper code, and shouldn't be touched by your code.
 
-Parameters: -
-Returns: -
-Modifies: A
 
+SCPU/C128 special considerations
+--------------------------------
 
-KERNALOFF
-
-Restores $01 value saved by KERNALON.
-
-Parameters: -
-Returns: -
-Modifies: A
-
-
-INITFASTLOAD
-
-Reinitializes the drivecode if necessary. Call this when you have performed
-Kernal file I/O, like saving files, and want to optimize the startup time for
-resuming fastloading operation. If you don't call this, it will be automatically
-called when opening the next file using fastloading.
-
-Parameters: -
-Returns: -
-Modifies: A,X,Y
-
-
-Assembling the loader
----------------------
-
-The loader consists of a configuration file (cfg_????.s) and the loader code
-itself (loader.s). These are meant to be assembled together, with the
-configuration file first. If your assembler has the include directive, you
-can write:
-
-  include cfg_????.s
-  include loader.s
-
-The start address for the loader code is not defined by default, you should
-define it to your liking. You can for example include the loader last (or
-first) in your program, it does not depend on where it is in memory. However,
-because it calls Kernal routines, it shouldn't be located at $e000-$ffff.
-
-Notice the point in the loader code where the "disposable" part begins
-(at the INITLOADER routine); you can assemble that part to a completely
-different memory location and overwrite it with some data once the you're
-done with initialization.
-
-The configuration files included are only some guidelines; you should create
-your own configuration file according to what features you need.
-
-
-Exomizer 1/2/3
---------------
-
-There are four variables in the configuration that control how the Exomizer
-depackroutine works: FORWARD_DECRUNCHING, LITERAL_SEQUENCES_NOT_USED, 
-MAX_SEQUENCE_LENGTH_256 and EXOMIZER_VERSION_3. By default all are zero.
-
-In Exomizer 1, the commandline you should use is:
-  exomizer -r -o<outfile> <infile>
-Ensure that FORWARD_DECRUNCHING variable is set to zero. LITERAL_SEQUENCES_
-NOT_USED can be set to nonzero for a shorter depacker, as they are not used
-in files packed with Exomizer 1.
-
-In Exomizer 2, use the "level" subcommand:
-  exomizer level -o<outfile> <infile>
-If you use the -f switch, set FORWARD_DECRUNCHING to nonzero. If you use -c
-switch, you can set LITERAL_SEQUENCES_NOT_USED to nonzero for shorter depacker.
-
-When using Exomizer 3, you should set EXOMIZER_VERSION_3 to nonzero. This
-will use the longer but faster Exomizer 3 depack routine that is incompatible
-with Exomizer 1 & 2. f you use the -M256 switch, set MAX_SEQUENCE_LENGTH_256 
-to nonzero for a shorter depacker. You can also set LITERAL_SEQUENCES_NOT_USED
-to further shorten the depacker, if you use the -c switch.
-
-
-How the "fake"-IRQloading with IDE64 & fast drive emulation works
------------------------------------------------------------------
-
-The loader switches on Kernal whenever it needs to do Kernal file I/O (re-
-initting the fastloader drivecode, opening a file, or reading a byte without
-fastloader). Normally this means that the slow original serial protocol is in
-use and IRQs are being delayed unpredictably.
-
-However, IDE64 or "fast drive emulation" in emulators don't use the serial
-protocol at all.
-
-In that case the "useserial" variable will be 0, and IRQs will only be delayed
-a little if at all.
-
-
-Zeropage usage
---------------
-
-The loader needs two regions of zeropage. The first region "zpbase" is for
-loading or depacking. It needs 2 adjacent zeropage variables with unpacked
-loading, 3 with PUCRUNCH loading and 8 with EXOMIZER loading. The base address
-for these is "zpbase" in the loader configuration file.
-
-Additional 4 adjacent zeropage variables are required by the lowlevel fastloader
-operations. The base address for them is "zpbase2" in the loader configuration.
-
-
-Interleave
-----------
-
-Interleaves in the range of 12-15 are most optimal for loading speed with the
-1-bit protocol. Remember that people will likely filecopy your productions
-though, resetting interleave to 10 and causing slower loading.
-
-For 2-bit loading, the default interleave 10 is good, especially for loading
-unpacked files. When used with Exomizer, interleaves in the range 11-13 may
-give better performance.
-
-
-SuperCPU
---------
-
-SuperCPU is switched to slow mode using sta $d07a before fastloading a sector.
-It's not switched back to fast mode automatically as of V2.1 anymore.
-
-
-Kernal switching
-----------------
-
-Kernal will be automatically switched on for minimal time during initializing
-the fastloader, opening a file with Kernal routines, or getting a byte with
-Kernal routines. Afterwards the value of $01 is restored.
-
-
-Sprites, interrupts and $dd00
------------------------------
-
-Interrupts (and I/O area) will be disabled by LOADFILE, LOADFILE_EXOMIZER
-& LOADFILE_PUCRUNCH whenever they're writing to memory, if the compile option
-LOAD_UNDER_IO is used.
-
-Interrupts are also disabled during the timing-sensitive receive of each byte
-when using the 2-bit fastloading protocol.
-
-If LOAD_UNDER_IO is not used (zero), and 1-bit fastloading protocol is used,
-interrupts will not be disabled by the loader at all.
-
-While loading, you should only modify $dd00 by not changing anything else than
-the lowest 2 bits (lda $dd00; and #$fc; ora #$xx; sta $dd00).
-
-While not loading, you can write any values, where bits 3, 4 & 5 (Serial bus
-ATN, CLK & DATA output) are zero, directly to $dd00. Those lines being high
-(zero) indicate idle state for loading.
-
-Note that the loader code contains several sequences like
-
-  lda #$ff-$10
-  and $dd00
-  sta $dd00
-
-If you change the videobank in an IRQ, and IRQ happens between the and & sta
-instructions, the wrong videobank will be displayed.
-
-You have to disable sprites yourself when doing Kernal loading using the slow
-serial protocol, or when using the 2-bit fastloading protocol, or else loading
-may hang. Check the variable "useserial" (and also "usefastload" with the 2-bit
-protocol): if either is nonzero, sprites have to be switched off.
-
-
-Mixing Kernal file operations and fastloading
----------------------------------------------
-
-Kernal file I/O always begin with the serial bus ATN line pulled low. The
-fastloader drive code, when in idle state (waiting for a filename from C64),
-will detect this and exit to the drive ROM code. But to let the C64 side to
-know that the drive code has been "detached", you must write 0 to the variable
-"fastloadstatus" when doing a Kernal file operation.
-
-Additionally, you can also re-init the fastloader immediately when you're done
-with Kernal file I/O (otherwise it'll be re-initted next time fastloading is
-used). For example:
-
-  jsr kernalon
-  lda #$00
-  sta fastloadstatus  ;Let fastloader know it will be "detached"
-
-  (your Kernal file I/O stuff, like a save routine, goes here)
-
-  jsr kernaloff
-  jsr initfastload    ;Reinit fastload now if needed
-
-Note that calling INITFASTLOAD never hurts: if fastloader is already on or isn't
-required, it will do nothing.
-
-Do not use Kernal file operations while in the middle of reading a fastloaded
-file with OPENFILE/GETBYTE calls. To ensure that the file has been closed,
-call GETBYTE until it returns with carry set.
-
-
-Loading under I/O area
-----------------------
-
-Without the compile option LOAD_UNDER_IO, you can not load into the $d000-$dfff
-region. Enabling it has the consequence of making LOADFILE / LOADFILE_EXOMIZER
-and LOADFILE_PUCRUNCH slower, as they toggle IO for each memory read or write.
-
-As of V2.28, LOAD_UNDER_IO is no longer needed to load compressed data under
-the Kernal ROM, but when doing this, you need to call the load routines with
-Kernal ROM off. The GETBYTE & OPENFILE will switch Kernal on momentarily as
-required, and restore the value you have set to $01.
-
-If you are using your own routines to write data under the I/O areas, you
-can use the provided DISABLEIO and ENABLEIO routines. For example:
-
-  jsr getbyte
-  jsr disableio
-  sta (data_under_io),y
-  jsr enableio
+You can speed up the CPU in your code for e.g. faster scrolling. When the loader
+is compiled with USETURBOMODE define nonzero, the loader will automatically
+switch back to slow mode when opening a file for load or save. However, if you
+switch back to turbo mode in IRQs, observe the following: if fileOpen variable
+is nonzero (file is currently open), you should not switch turbo mode on.
 
 
 IDE64 special considerations
 ----------------------------
 
 From the IDE64 fixing/compatibility guide at
-http://www.volny.cz/dundera/ide_fix.html
+http://www.ide64.org/ide_fix.html
 
 - IRQ/NMI can get delayed by 30-40 cycles (like VIC's bad lines) while
   executing IDE64 calls. This may cause "raster bugs" and similar.
@@ -397,80 +191,4 @@ http://www.volny.cz/dundera/ide_fix.html
 Version history
 ---------------
 
-V2.0    - Original release
-
-V2.01   - Rewrote the drivecode init (much smaller), and optimized the
-          asynchronous filename sending protocol. Now I no longer consider
-          this loader to actually contain Marko Mäkelä's code but of course his
-          irqloader.s has been a huge inspiration.
-
-V2.02   - Changed to store REU address on zeropage and not rely on
-          autoincrementing.
-
-V2.03   - Exomizer V1.0 depackroutine (1 byte smaller) integrated.
-
-V2.04   (internal version)
-        - SuperRAM code by Wolfram Sang added.
-        - REU code shortened with his suggestions.
-        - SuperCPU set back to fast mode after fastloading a sector.
-        - Section on fastloading performance & interleave added to docs.
-
-V2.05   - Improved error handling with Kernal loading.
-        - REU support zeropage variables belong to the "additional" ones now.
-        - Example programs now wait for keypress when finished and then reset
-          (because some of them trash important BASIC zeropage variables)
-        - Sections on assembling the loader & zeropage added to docs.
-
-V2.1    - Added 1581, CMD FD and CMD HD support.
-        - 2-bit transfer protocol removed (because supported drives run at
-          different speeds)
-        - Optimized 1-bit data transfer routine.
-        - Exomizer depack calls getbyte directly to eliminate 12 cycles
-          (JSR/RTS) from each getbyte call (was using a wrapper previously.)
-        - Stripped down version available as Turbo Assembler source code
-          (LOADTA.SEQ)
-
-V2.2    - Added autodetection of fastload capability & serial protocol
-        - "Fake" IRQ-loading for IDE64 & fast drive emulation
-        - REU buffering support removed
-        - Hiscore loading/saving removed
-        - No Turbo Assembler sourcecode version
-
-v2.21   - Exomizer 2 forward operating depackroutine integrated.
-        - DISABLEIO optimized to disable interrupts one instruction later.
-
-v2.22   - Bugfixed the Exomizer forward depackroutine.
-        - Added choice of Exomizer forward/backward decrunching and literal
-          sequences disabled/enabled. Also allows Exomizer 1 compatibility.
-
-v2.23   - Fixed the drive-detection to work better with multidrive setups.
-
-v2.24   - Further improvement to drive-detection.
-        - Readded possibility for 2-bit protocol.
-        - Added proper LED blinking for 1581 / CMD FD.
-
-v2.25   - Fixed long file name directory search.
-
-v2.26   - Added * wildcard support to long file names.
-
-v2.27   - Added Exomizer 3 support.
-        - getbyte does not save/restore Y register unnecessarily. 1-bit
-          protocol buffer must be page-aligned as a consequence.
-        - Examples changed to use 2-bit protocol and smaller interleave.
-        - Most example configs have load under IO disabled for better
-          performance.
-
-v2.28   - Drivecode will retry read sector indefinitely; read error return code
-          removed from getbyte. This speeds up decompression a little.
-        - Rewritten 2-bit protocol send loop based on c64gameframework loader.
-        - Proper detection of Drean machines for 2-bit send adjustment.
-        - Use 2 MHz mode on 1571 for better timing reliability.
-        - Further optimization of getbyte.
-        - ADDITIONAL_ZEROPAGE option removed; it's mandatory now.
-        - LOAD_UNDER_IO no longer needed to load compressed data under the
-          Kernal ROM.
-        - The "slowirq" variable is removed, as maintaining it was extra
-          overhead. The variable "useserial" can be watched instead.
-          
-v2.29   - Increase 1-bit protocol fillbuffer predelay to prevent occasional 
-          hang on NTSC.
+V3.0    - Original release based on the MW ULTRA / c64gameframework loader

@@ -1,5 +1,0 @@
-Here are some example programs using the loader. Each of them loads a picture
-and shows it. The example diskimage (.D64) has been written with interleave 12.
-When using the 2-bit protocol only, interleave can likely be decreased.
-
-Example .D81 image is also included for testing.

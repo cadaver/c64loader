@@ -1,9 +1,2 @@
-test_exom3.prg EXOMIZER3_LOADER
-test_exom.prg EXOMIZER_LOADER
-test_pucr.prg PUCRUNCH_LOADER
 test_unp.prg UNPACKED_LOADER
-test_1bit.prg 1BIT_LOADER
-datafile UNPACKED_PIC
-datafile.puc PUCRUNCHED_PIC
-datafile.exo EXOMIZED_PIC
-datafile.exo3 EXOMIZED3_PIC
+datafile 00

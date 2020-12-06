@@ -1,13 +1,15 @@
 # Covert Bitops Loadersystem
 
-Game-oriented loader for C64 productions with integrated Exomizer or Pucrunch decompression. 
-Autodetects whether fastloading can be used and if the device used is a serial device or not.
+Game-oriented loader for C64 productions with optional integrated Exomizer3 decompression. 
+V3.x based on c64gameframework / MW ULTRA loader. Is less configurable, but has smaller runtime,
+limited save support without reinitialization, and may have higher performance.
 
-Fastloader support on 1541, 1571, 1581, CMD FD and CMD HD drives.
+Fastloader support on 1541, 1571, 1581, CMD FD and CMD HD drives, and SD2IEC (ELoad).
+Detection of non-serial devices like IDE64 which can load with interrupts on.
 
 ## License
 
-Copyright (c) 2002-2019 Lasse Öörni
+Copyright (c) 2002-2020 Lasse Öörni
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),

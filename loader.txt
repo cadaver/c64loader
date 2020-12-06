@@ -29,11 +29,11 @@ Email: (Lasse Öörni)
 loorni@gmail.com
 
 
-Features and assumptions:
--------------------------
+Features, assumptions & limitations
+-----------------------------------
 
 - V3.x is a game-oriented loader with limitations, based on c64gameframework / 
-  MW ULTRA loader. The runtime part is less than one page of memory.
+  MW ULTRA loader. The low-level runtime part is less than one page of memory.
 
 - Autodetection of drive programming capability & serial protocol
   * Fastloader uploaded to drives that support it:
@@ -55,6 +55,9 @@ Features and assumptions:
 - Loader assumes Kernal will be off ($35 value in $01) during runtime.
   It will disable timer interrupt and NMI from Restore keypress when
   initializing.
+  
+- Loading under I/O is not handled in the default high-level routines. You need
+  to implement this yourself if needed.
 
 - Fastloader initializes itself only once, after which the loader init and
   drivecode can be disposed. Save is supported only to preallocated files
@@ -66,11 +69,22 @@ Features and assumptions:
   device (loaderMode 0)
 
 
+Including in a program:
+-----------------------
+
+- Include config.s first; modify it according to your needs.
+- Then include loader.s where you need the resident loader runtime.
+- Then include additional modules like loadunpacked.s or loadexomizer3.s as
+  needed.
+- Finally include loaderinit.s which is the largest, one-time initialization
+  part and can be overwritten after calling InitLoader.
+
+
 Summary of user-callable routines:
 ----------------------------------
 
-The "disposable" routines
--------------------------
+Initialization (disposable)
+---------------------------
 
 InitLoader
 
@@ -83,8 +97,8 @@ Returns:    ntscFlag, loaderMode and fileOpen variables set
 Modifies:   A,X,Y
 
 
-The runtime routines
---------------------
+Low-level runtime
+-----------------
 
 OpenFile
 
@@ -137,6 +151,35 @@ No-op in Kernal loading modes (loaderMode 0 & 1)
 Parameters: A must be 0
 Returns:    -
 Modifies:   -
+
+
+Optional high-level runtime
+---------------------------
+
+LoadUnpacked (in loadunpacked.s)
+
+Loads a file into the address specified by the file's 2 first bytes
+
+Parameters: A file number
+Returns:    C=0 if OK, C=1 if failed to load
+Modifies:   A,X,Y
+
+LoadUnpackedRaw (in loadunpacked.s)
+
+Loads a raw file (no load address) into the specified destination.
+
+Parameters: A file number, X/Y load address
+Returns:    C=0 if OK, C=1 if failed to load
+Modifies:   A,X,Y
+
+LoadExomizer3Raw (in loadexomizer3.s)
+
+Loads an Exomizer3 compressed raw file (no load address) into the specified
+destination.
+
+Parameters: A file number, X/Y load address
+Returns:    C=0 if OK, C=1 if failed to load
+Modifies:   A,X,Y
 
 
 Diskside change detection (1541)

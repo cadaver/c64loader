@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-;Fastloader test with unpacked file
+;Fastloader test with Exomizer 3 raw file
 ;-------------------------------------------------------------------------------
 
                 processor 6502
@@ -15,9 +15,11 @@
 
                 clc                     ;Init loader with fastload allowed,
                 jsr InitLoader          ;Kernal will be switched off
-                lda #$00
-                jsr LoadUnpacked        ;Load file 00 as unpacked data 
-                                        ;and with startaddress
+                lda #$01
+                ldx #<$4000
+                ldy #>$4000
+                jsr LoadExomizer3Raw    ;Load file 01 as Exomizer3 raw data 
+                                        ;and defined startaddress
                 bcs LoadError           ;Error if carry set
                 lda #$02                ;Show the picture we just loaded
                 sta $dd00
@@ -53,5 +55,8 @@ WaitExit:       lda $dc00
                 jmp 64738
 
                 include ..\loader.s
-                include ..\loadunpacked.s
+                include ..\loadexomizer3.s
+                
+depackBuffer:                           ;Define depackbuffer (156 bytes)
+                                        ;over the disposable loader init
                 include ..\loaderinit.s

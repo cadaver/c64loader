@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Loader V3.0, configuration
+; Covert Bitops Loadersystem V3.x, configuration
 ;-------------------------------------------------------------------------------
 
         ; Conditionals

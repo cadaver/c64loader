@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Loader V3.0, disposable initialization
+; Covert Bitops Loadersystem V3.x, disposable initialization
 ;-------------------------------------------------------------------------------
 
         ; Kernal zeropage variables

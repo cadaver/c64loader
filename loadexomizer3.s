@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Loader V3.0, Exomizer 3 forward mode loading
+; Covert Bitops Loadersystem V3.x, Exomizer 3 forward mode loading
 ;-------------------------------------------------------------------------------
 
         ; Note: you need to define depackBuffer address (156 bytes)

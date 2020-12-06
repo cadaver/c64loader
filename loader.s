@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Loader V3.0, runtime
+; Covert Bitops Loadersystem V3.x, runtime
 ;-------------------------------------------------------------------------------
 
         ; NOTE: include config.s before the loader, and loaderinit.s elsewhere
@@ -14,7 +14,7 @@ LOAD_FAST       = $ff           ;loaderMode: Load using custom serial protocol
 SPR_TOP_SAFETY  = 4
 SPR_BOTTOM_SAFETY = 21
 
-        ; Loader low-level runtime (default versions for fastloader)
+        ; Low-level runtime (default versions for fastloader)
 
 loaderCodeStart:
 
@@ -176,4 +176,4 @@ SetNoSprites:   sta FL_MaxSprY+1
 loaderMode:     dc.b 0
 ntscFlag:       dc.b 0
 
-        ; Loader low-level runtime ends
+        ; Low-level runtime ends

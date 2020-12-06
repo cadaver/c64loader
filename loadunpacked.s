@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-; COVERT BITOPS Loader V3.0, unpacked loading
+; Covert Bitops Loadersystem V3.x, unpacked loading
 ;-------------------------------------------------------------------------------
 
         ; Load unpacked file with specified load address

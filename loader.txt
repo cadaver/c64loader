@@ -1,5 +1,5 @@
-COVERT BITOPS Autoconfiguring Loader V3.0
------------------------------------------
+Covert Bitops Loadersystem V3.0
+-------------------------------
 
 Freely usable for all kinds of C64 projects.
 

@@ -150,9 +150,9 @@ IL_UseKernal:   lda $a5
                 bne IL_CopyLoader               ;If not, VICE virtual drive or IDE64, can allow interrupts
 IL_NoSerial:    inc loaderMode
                 lda #$60
-                sta SetSpriteRange              ;SetSpriteRange disabled in Kernal-mode
+                sta SetSpriteRange              ;SetSpriteRange disabled in Kernal mode
                 sta SetNoSprites
-                sta StopIrq                     ;Default stopIRQ-code for Kernal mode: just RTS
+                sta StopIrq                     ;Default stop IRQ-code for Kernal mode: just RTS
 IL_CopyLoader:  ldx #loaderCodeEnd-loaderCodeStart
 IL_CopyLoaderLda:
                 lda ilSlowLoadStart-1,x

@@ -13,13 +13,12 @@
                 dc.b $32,$30,$36,$31    ;2061 in ASCII
                 dc.b $00,$00,$00        ;BASIC program end
 
-                clc                     ;Init loader with fastload allowed,
+Start:          clc                     ;Init loader with fastload allowed,
                 jsr InitLoader          ;Kernal will be switched off
                 lda #$01
                 ldx #<$4000
                 ldy #>$4000
-                jsr LoadExomizer3Raw    ;Load file 01 as Exomizer3 raw data 
-                                        ;and defined startaddress
+                jsr LoadExomizer3Raw    ;Load file 01 as Exomizer3 raw data and defined startaddress
                 bcs LoadError           ;Error if carry set
                 lda #$02                ;Show the picture we just loaded
                 sta $dd00

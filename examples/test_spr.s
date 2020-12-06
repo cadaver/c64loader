@@ -43,8 +43,7 @@ SpriteLoop:     txa
                 jsr SetSpriteRange      ;Set sprite min/max Y coord range for fastloader
 
 SkipSprites:    lda #$00
-                jsr LoadUnpacked        ;Load file 00 as unpacked data
-                                        ;and with startaddress
+                jsr LoadUnpacked        ;Load file 00 as unpacked data and with startaddress
                 bcs LoadError           ;Error if carry set
                 lda #$02                ;Show the picture we just loaded
                 sta $dd00

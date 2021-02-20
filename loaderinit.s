@@ -96,7 +96,7 @@ IL_IsNtsc:      sta ntscFlag
                 sta fastLoadEor
 IL_IsPal:       plp
                 bcc IL_TryUploadDriveCode       ;Check for forcing safe mode
-                jmp IL_CopyLoader
+                jmp IL_CopyKernalLoader
 
         ; Drive detection stage 1: try to start the drivecode
 
@@ -147,8 +147,9 @@ IL_FastLoadOK:  dec loaderMode                  ;Mark IRQ-loader mode in use
 
 IL_UseKernal:   lda $a5
                 cmp #$aa                        ;Serial bus used?
-                bne IL_CopyLoader               ;If not, VICE virtual drive or IDE64, can allow interrupts
+                bne IL_CopyKernalLoader         ;If not, VICE virtual drive or IDE64, can allow interrupts
 IL_NoSerial:    inc loaderMode
+IL_CopyKernalLoader:
                 lda #$60
                 sta SetSpriteRange              ;SetSpriteRange disabled in Kernal mode
                 sta SetNoSprites

@@ -5,7 +5,7 @@
                 processor 6502
                 org $0801
 
-                include ..\config.s
+                include ../config.s
 
                 dc.b $0b,$08            ;Address of next BASIC instruction
                 dc.w 10                 ;Line number
@@ -53,9 +53,9 @@ WaitExit:       lda $dc00
                 inc $01                 ;Kernal back on to reset
                 jmp 64738
 
-                include ..\loader.s
-                include ..\loadexomizer3.s
+                include ../loader.s
+                include ../loadexomizer3.s
                 
 depackBuffer:                           ;Define depackbuffer (156 bytes)
                                         ;over the disposable loader init
-                include ..\loaderinit.s
+                include ../loaderinit.s

@@ -408,13 +408,14 @@ EL_BadLineWait: lda $d011
                 sbc $d012
                 and #7
                 beq EL_BadLineWait
-                lda #$10
-                ora $dd00
+                lda $dd00
+                ora #$10
                 sta $dd00
                 bit loadTempReg
                 and #$03
                 sta $dd00
                 sta EL_Eor+1
+                nop
                 nop
                 nop
                 nop

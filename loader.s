@@ -160,7 +160,7 @@ loaderCodeEnd:
         ; Parameters: A Y-coordinate of topmost sprite, X Y-coordinate of 
         ;             bottommost sprite. If no sprites, call SetNoSprites
         ;             with A=0 instead
-        ; Returns: byte in A, fileOpen set to 0 after EOF
+        ; Returns: -
         ; Modifies: A
 
 SetSpriteRange: sec

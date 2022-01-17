@@ -1,4 +1,4 @@
-Covert Bitops Loadersystem V3.02
+Covert Bitops Loadersystem V3.03
 --------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -240,3 +240,5 @@ V3.0    - Original release based on the MW ULTRA / c64gameframework loader
 V3.01   - Fix safe mode loader init
 
 V3.02   - Fix SD2IEC timing on NTSC
+
+V3.03   - Fix wrong Y register value in fast save

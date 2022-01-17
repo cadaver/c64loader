@@ -138,7 +138,7 @@ FastSave:       ldy #$80                        ;Command $80 = save
                 jsr FL_SendByte
                 lda zpBitsHi
                 jsr FL_SendByte
-                tay
+                ldy #$00
 FS_Loop:        lda (zpSrcLo),y
                 jsr FL_SendByte
                 iny

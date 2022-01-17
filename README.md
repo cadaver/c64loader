@@ -1,6 +1,6 @@
 # Covert Bitops Loadersystem
 
-Game-oriented loader for C64 productions with optional integrated Exomizer3 decompression. 
+Game-oriented loader for C64 productions with optional integrated Exomizer3 decompression.
 V3.x based on c64gameframework / MW ULTRA loader. Is less configurable, but has smaller runtime,
 limited save support without reinitialization, and may have higher performance.
 
@@ -9,7 +9,7 @@ Detection of non-serial devices like IDE64 which can load with interrupts on.
 
 ## License
 
-Copyright (c) 2002-2021 Lasse Öörni
+Copyright (c) 2002-2022 Lasse Öörni
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),

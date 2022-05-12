@@ -157,7 +157,7 @@ loaderCodeEnd:
 
         ; Set sprite range for fastloading. Turns to no-op in Kernal loading.
         ;
-        ; Parameters: A Y-coordinate of topmost sprite, X Y-coordinate of 
+        ; Parameters: A Y-coordinate of topmost sprite, X Y-coordinate of
         ;             bottommost sprite. If no sprites, call SetNoSprites
         ;             with A=0 instead
         ; Returns: -
@@ -172,7 +172,7 @@ SetNoSprites:   sta FL_MaxSprY+1
                 rts
 
         ; Non-zeropage variables
-        
+
 loaderMode:     dc.b 0
 ntscFlag:       dc.b 0
 

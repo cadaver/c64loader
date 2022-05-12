@@ -388,11 +388,16 @@ ELoadOpen:      jsr EL_PrepareIO
                 lda #$f0                        ;Open for read
                 jsr EL_SendFileNameShort
                 jsr EL_Init
+                if USETURBOMODE > 0
                 jsr EL_SendLoadCmdFast
                 sta loadBufferPos               ;Dummy value (0) to prevent re-refill during initial refill
 EL_Refill:      pha
                 php
                 jmp EL_FinishRefill             ;Convoluted jumping to get the sprite-related addresses to align with the original fastloader
+                else
+                nop
+                jmp EL_FinishOpen
+                endif
 
 EL_GetByteFast: php
 EL_GetByteWait: bit $dd00                       ;Wait for drive to signal data ready with
@@ -437,6 +442,12 @@ EL_Eor:         eor #$00
                 beq EL_Refill
 EL_NoRefill:    rts
 
+                if USETURBOMODE = 0
+EL_FinishOpen:  jsr EL_SendLoadCmdFast
+                sta loadBufferPos               ;Dummy value (0) to prevent re-refill during initial refill
+EL_Refill:      pha                             ; Version without jumping if turbomode disable not in use (align with fastload runtime)
+                php
+                endif
 EL_FinishRefill:jsr EL_GetByteFast              ; This will decrement loadBufferPos for the second time, but does not matter
                 cmp #$00
                 beq EL_EOF

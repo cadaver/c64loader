@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 
         ; Conditionals
-        
+
 USETURBOMODE    = 1             ;Can set to zero if you are not going to use
                                 ;SCPU/C128 fast mode
 

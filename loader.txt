@@ -1,4 +1,4 @@
-Covert Bitops Loadersystem V3.04
+Covert Bitops Loadersystem V3.05
 --------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -244,3 +244,5 @@ V3.02   - Fix SD2IEC timing on NTSC
 V3.03   - Fix wrong Y register value in fast save
 
 V3.04   - Fix compile with USETURBOMODE = 0
+
+V3.05   - Fix use of videobank 1 with SD2IEC

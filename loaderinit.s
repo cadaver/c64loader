@@ -390,7 +390,7 @@ ELoadOpen:      jsr EL_PrepareIO
                 jsr EL_Init
                 if USETURBOMODE > 0
                 jsr EL_SendLoadCmdFast
-                sta loadBufferPos               ;Dummy value (0) to prevent re-refill during initial refill
+                stx loadBufferPos               ;Dummy value to prevent re-refill during initial refill
 EL_Refill:      pha
                 php
                 jmp EL_FinishRefill             ;Convoluted jumping to get the sprite-related addresses to align with the original fastloader
@@ -444,7 +444,7 @@ EL_NoRefill:    rts
 
                 if USETURBOMODE = 0
 EL_FinishOpen:  jsr EL_SendLoadCmdFast
-                sta loadBufferPos               ;Dummy value (0) to prevent re-refill during initial refill
+                stx loadBufferPos               ;Dummy value to prevent re-refill during initial refill
 EL_Refill:      pha                             ; Version without jumping if turbomode disable not in use (align with fastload runtime)
                 php
                 endif
@@ -577,8 +577,8 @@ EL_Delay27:     jsr EL_Delay18
                 jmp EL_Delay12
 
         ; Close file
-        
-EL_CloseReadFile:   
+
+EL_CloseReadFile:
                 lda #$e0
 EL_CloseFile:   jsr EL_ListenAndSecond
                 jsr EL_Unlisten                 ;Returns with A=0
@@ -610,12 +610,12 @@ EL_Unlisten:    lda #$3f                        ;Unlisten command always after a
                 jsr EL_SendByteATN
                 jsr EL_SetLinesIdle             ;Let go of DATA+CLK+ATN
 EL_WaitDataHigh:bit $dd00                       ;Wait until device lets go of the DATA line
-                bpl EL_WaitDataHigh             
+                bpl EL_WaitDataHigh
                 rts
 
         ; Send load command by fast protocol
 
-EL_SendLoadCmdFast: 
+EL_SendLoadCmdFast:
                 bit $dd00                       ;Wait for drive to signal ready to receive
                 bvs EL_SendLoadCmdFast          ;with CLK low
                 lda EL_SetLinesIdle+1
@@ -624,7 +624,7 @@ EL_SendLoadCmdFast:
                 stx $dd00
 EL_SendFastWait:bit $dd00                       ;Wait for drive to release CLK
                 bvc EL_SendFastWait
-EL_SendFastWaitBorder:  
+EL_SendFastWaitBorder:
                 bit $d011                       ;Wait to be in border for no badlines
                 bpl EL_SendFastWaitBorder
                 jsr EL_SetLinesIdle             ;Waste cycles / send 0 bits

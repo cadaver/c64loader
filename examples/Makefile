@@ -25,7 +25,7 @@ datafile.exo: datafile
 	exomizer2 level -odatafile.exo datafile
 
 datafile.exo3: datafile
-	exomizer3 level -odatafile.exo3 datafile
+	exomizer3 level -T4 -P-32 -odatafile.exo3 datafile
 
 datafile.puc: datafile
 	pucrunch -c0 datafile datafile.puc

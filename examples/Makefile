@@ -17,5 +17,5 @@ test_spr.prg: test_spr.s ../config.s ../loader.s ../loaderinit.s ../loadunpacked
 
 datafile.exo3: datafile
 	prg2bin datafile datafile.bin
-	exomizer3 raw -T4 -M256 -c -odatafile.exo3 datafile.bin
+	exomizer3 raw -T4 -M256 -P-32 -c -odatafile.exo3 datafile.bin
 

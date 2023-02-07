@@ -9,7 +9,7 @@ Detection of non-serial devices like IDE64 which can load with interrupts on.
 
 ## License
 
-Copyright (c) 2002-2022 Lasse Öörni
+Copyright (c) 2002-2023 Lasse Öörni
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),

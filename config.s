@@ -7,6 +7,8 @@
 USETURBOMODE    = 1             ;Can set to zero if you are not going to use
                                 ;SCPU/C128 fast mode
 
+INCLUDESAVE     = 1             ;Set to zero to remove save routines
+
         ; Zeropage config
 
 zpBase          = $02           ;Base for zeropage vars

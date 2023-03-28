@@ -26,6 +26,8 @@ loaderCodeStart:
 
 OpenFile:       jmp FastOpen
 
+                if INCLUDESAVE > 0
+
         ; Save file
         ;
         ; Parameters: A filenumber, zpSrcLo-Hi startaddress, zpBitsLo-Hi amount of bytes
@@ -33,6 +35,8 @@ OpenFile:       jmp FastOpen
         ; Modifies: A,X,Y
 
 SaveFile:       jmp FastSave
+
+                endif
 
         ; Read a byte from an opened file. Do not call after fileOpen becomes 0
         ;
@@ -132,6 +136,8 @@ FL_SendAck:     and $dd00
                 bne FL_SendLoop
                 rts
 
+                if INCLUDESAVE > 0
+
 FastSave:       ldy #$80                        ;Command $80 = save
                 jsr FL_SendFileNameAndCommand
                 lda zpBitsLo                    ;Send save length
@@ -150,6 +156,8 @@ FS_NoMSB:       cpy zpBitsLo
                 lda zpBitsHi
                 bne FS_Loop
                 rts
+                
+                endif
 
 FastLoadEnd:
 

@@ -211,7 +211,7 @@ IL_CopyELoadHelper:
                 jmp IL_CopyLoader
 
         ; NMI routine for init
-        
+
 NMI:            rti
 
         ; Slow fileopen / getbyte / save routines
@@ -226,7 +226,9 @@ ilSlowLoadStart:
         ; Returns: fileOpen 0 if failed to open
         ; Modifies: A,X,Y
 
-               jmp SlowOpen
+                jmp SlowOpen
+
+                if INCLUDESAVE > 0
 
         ; Save file
         ;
@@ -234,7 +236,9 @@ ilSlowLoadStart:
         ; Returns: -
         ; Modifies: A,X,Y
 
-               jmp SlowSave
+                jmp SlowSave
+
+                endif
 
         ; Read a byte from an opened file. Do not call after fileOpen becomes 0
         ;
@@ -277,6 +281,8 @@ SlowOpen:       jsr PrepareKernalIO
                 sta loadTempReg                 ;Store buffered first byte
                 lda status                      ;If nonzero status after first byte -> error (game doesn't have 1-byte files)
                 beq KernalOff
+
+                if INCLUDESAVE > 0
                 bne CloseKernalFile
 
 SlowSave:       jsr PrepareKernalIO
@@ -294,6 +300,9 @@ SS_NoMSB:       cpy zpBitsLo
                 bne SS_Loop
                 lda zpBitsHi
                 bne SS_Loop
+
+                endif
+
 CloseKernalFile:lda #$02
                 jsr Close
                 lda #$00
@@ -321,7 +330,11 @@ PrepareKernalIO:pha                             ;Convert filenumber to filename
                 sta SlowGetByte+1               ;First buffered byte indicator + shifted $01 value
                 asl
                 sta $01
-SetFileName:    lda #$05
+SetFileName:    if INCLUDESAVE > 0
+                lda #$05
+                else
+                lda #$02
+                endif
                 ldx #<slowReplace
                 ldy #>slowReplace
                 jmp SetNam
@@ -340,9 +353,11 @@ SetLFSOpen:     ldx fa
                 ldx #$02
                 rts
 
-slowReplace:    dc.b "@"
+slowReplace:    if INCLUDESAVE > 0
+                dc.b "@"
 slowUnitAndFileName:
                 dc.b "0:"
+                endif
 slowFileName:   dc.b "  "
 
 SlowLoadEnd:
@@ -365,6 +380,8 @@ ilELoadStart:
 
                 jmp ELoadOpen
 
+                if INCLUDESAVE > 0
+
         ; Save file
         ;
         ; Parameters: A filenumber, zpSrcLo-Hi startaddress, zpBitsLo-Hi amount of bytes
@@ -372,6 +389,8 @@ ilELoadStart:
         ; Modifies: A,X,Y
 
                 jmp ELoadSave
+
+                endif
 
         ; Read a byte from an opened file. Do not call after fileOpen becomes 0
         ;
@@ -458,6 +477,8 @@ EL_NoEOF:       sta loadBufferPos               ; Bytes to read in the next "buf
                 pla
                 rts
 
+                if INCLUDESAVE > 0
+
 ELoadSave:      jsr EL_PrepareIO
                 lda #$f1                        ;Open for write
                 ldy #<eloadReplace              ;Use the long filename with replace command
@@ -478,6 +499,8 @@ ES_NoMSB:       cpy zpBitsLo
                 jsr EL_Unlisten
                 lda #$e1                        ;Close the write stream
                 jmp EL_CloseFile
+
+                endif
 
 EL_SendFileNameShort:
                 ldy #<eloadFileName
@@ -656,7 +679,9 @@ eloadMEStringEnd:
                 dc.b "eload1"
 eloadMWStringEnd:
 
-eloadReplace:   dc.b "@0:"
+eloadReplace:   if INCLUDESAVE > 0
+                dc.b "@0:"
+                endif
 eloadFileName:  dc.b "  "
 eloadFileNameEnd:
 

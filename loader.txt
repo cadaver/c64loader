@@ -1,4 +1,4 @@
-Covert Bitops Loadersystem V3.05
+Covert Bitops Loadersystem V3.06
 --------------------------------
 
 Freely usable for all kinds of C64 projects.
@@ -246,3 +246,5 @@ V3.03   - Fix wrong Y register value in fast save
 V3.04   - Fix compile with USETURBOMODE = 0
 
 V3.05   - Fix use of videobank 1 with SD2IEC
+
+V3.06   - Allow to remove save routines with config define INCLUDESAVE = 0

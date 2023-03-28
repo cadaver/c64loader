@@ -696,7 +696,7 @@ ilDriveCode:
                 rorg drvStart
 
         ; Drive patch data
-                 
+
         ; 1MHz transfer routine
 
 Drv1MHzSend:    lda drvSendTbl,x
@@ -786,8 +786,14 @@ DrvFFound:      lda #<(drvIdByte-1)
                 bpl DrvIdLda
 DrvIdFound:     txa
                 bne DrvNot1541
-                lda #$2c                        ;On 1541/1571, patch out the flush ($a2) job call
+                lda #$2c      
+                if INCLUDESAVE > 0              ;On 1541/1571, patch out the flush ($a2) job call
                 sta DrvFlushJsr
+                else
+                nop
+                nop
+                nop
+                endif
                 lda #$7a                        ;Set data direction so that can compare against $1800 being zero
                 sta $1802
                 lda $e5c6
@@ -836,6 +842,8 @@ DrvBeginDelay:  inx                             ;Delay to make sure C64 catches 
 DrvMain:        jsr DrvGetByte                  ;Get filenumber
                 sta DrvFileNumber+1
                 jsr DrvGetByte                  ;Get command
+
+                if INCLUDESAVE > 0
                 bpl DrvLoad
 
 DrvSave:        jsr DrvGetByte                  ;Get amount of bytes to expect
@@ -863,6 +871,7 @@ DrvSaveFinish:  jsr DrvGetSaveByte              ;Make sure all bytes are receive
 DrvFlush:       lda #$a2                        ;Flush buffers (1581 and CMD drives)
 DrvFlushJsr:    jsr DrvDoJob
                 jmp DrvMain
+                endif
 
 DrvLoad:        jsr DrvFindFile
                 bne DrvSendBlk
